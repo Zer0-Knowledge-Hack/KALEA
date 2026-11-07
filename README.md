@@ -10,6 +10,31 @@ Este README es el punto de entrada para retomar el proyecto en otro entorno y pr
 
 La demo privada requiere iniciar sesión y fue publicada por separado. Para reproducir la versión de esta rama, usa la ejecución local de abajo. Verifica el acceso y la revisión desplegada antes de usar la URL como evidencia.
 
+## Plataforma (monorepo pnpm)
+
+```text
+KALEA/
+├── apps/
+│   ├── web/        # Next.js 16 + Tailwind 4 + Motion · landing y app (/app)
+│   └── api/        # Hono · cotizaciones, órdenes y login SEP-10 (JWT)
+├── packages/
+│   └── shared/     # Tipos de dominio y datos demo compartidos
+├── contracts/      # (pendiente) escrow Soroban
+├── legacy/         # Prototipo HTML original
+└── brand/
+```
+
+**Login:** wallet Stellar (Freighter). El API emite un reto SEP-10 (`GET /auth/challenge`), la wallet lo firma y `POST /auth/token` devuelve un JWT para las rutas protegidas (`/orders`). Sin custodia ni contraseñas.
+
+**Diseño:** paleta negro `#0A0A0A`, lima `#C8F23A`, coral `#FF7A70`; tipografías Schibsted Grotesk y JetBrains Mono.
+
+```sh
+pnpm install
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
+pnpm dev   # web :3000 · api :8787
+```
+
 ## 1. Qué estamos construyendo
 
 **Usuario inicial propuesto.** Personas en Bolivia que ya reciben, mantienen o necesitan USDC y quieren convertirlo a BOB o comprarlo con medios de pago que conocen. El segundo perfil es el operador P2P que publica condiciones, acepta órdenes y ejecuta su parte del intercambio.
