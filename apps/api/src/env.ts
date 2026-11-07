@@ -7,6 +7,10 @@ export const env = {
   webOrigin: process.env.WEB_ORIGIN ?? "http://localhost:3000",
   homeDomain: process.env.HOME_DOMAIN ?? "localhost",
   stellarNetwork: network,
+  priceSources: (process.env.PRICE_SOURCES ?? "binance").split(",").map((s) => s.trim()),
+  manualRate: process.env.MANUAL_RATE_BUY && process.env.MANUAL_RATE_SELL
+    ? { buy: Number(process.env.MANUAL_RATE_BUY), sell: Number(process.env.MANUAL_RATE_SELL) }
+    : null,
   networkPassphrase: network === "public" ? Networks.PUBLIC : Networks.TESTNET,
   // Dev fallbacks rotate on restart; set both in .env for stable sessions.
   serverKeypair: process.env.SERVER_SIGNING_SECRET

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { Keypair, TransactionBuilder } from "@stellar/stellar-sdk";
-import { app } from "./app";
+import { createApp } from "./app";
+import { manualRate } from "./pricing/providers";
+import { createRateService } from "./pricing/service";
+
+const app = createApp({ rates: createRateService([manualRate(11.98, 11.92)]) });
 
 async function login(kp = Keypair.random(), signer = kp) {
   const res = await app.request(`/auth/challenge?account=${kp.publicKey()}`);
@@ -63,6 +67,40 @@ describe("auth SEP-10", () => {
   });
 });
 
+describe("precios de mercado", () => {
+  it("GET /rates expone la referencia y la política", async () => {
+    const body = await (await app.request("/rates")).json();
+    expect(body.reference).toMatchObject({ buy: 11.98, sell: 11.92, sources: ["manual"] });
+    expect(body.policy).toEqual({ maxPremium: 0.02, maxDiscount: 0.015 });
+  });
+
+  it("las cotizaciones incluyen spread y referencia", async () => {
+    const body = await (await app.request("/quotes?side=buy&amountBob=1000&method=qr_simple")).json();
+    expect(body.reference.buy).toBe(11.98);
+    expect(body.quotes.every((q: { verdict: string }) => q.verdict !== "rejected")).toBe(true);
+  });
+
+  const offMarket = createApp({ rates: createRateService([manualRate(11, 10.9)]) });
+
+  it("oculta ofertas fuera de mercado", async () => {
+    const body = await (await offMarket.request("/quotes?side=buy&amountBob=1000&method=qr_simple")).json();
+    expect(body.quotes).toEqual([]);
+  });
+
+  it("no deja crear órdenes sobre ofertas fuera de mercado", async () => {
+    const kp = Keypair.random();
+    const challenge = await (await offMarket.request(`/auth/challenge?account=${kp.publicKey()}`)).json();
+    const tx = TransactionBuilder.fromXDR(challenge.transaction, challenge.networkPassphrase);
+    tx.sign(kp);
+    const { token } = await (await offMarket.request("/auth/token", { method: "POST", body: JSON.stringify({ transaction: tx.toXDR() }) })).json();
+    const res = await offMarket.request("/orders", authed(token, {
+      method: "POST",
+      body: JSON.stringify({ offerId: "of_1", amountBob: 1000, method: "qr_simple" }),
+    }));
+    expect(res.status).toBe(409);
+  });
+});
+
 describe("órdenes", () => {
   it("exige token", async () => {
     expect((await app.request("/orders")).status).toBe(401);
@@ -77,7 +115,7 @@ describe("órdenes", () => {
     }));
     const { order } = await created.json();
     expect(created.status).toBe(201);
-    expect(order).toMatchObject({ status: "awaiting_fiat", amountUsdc: 103.95, rate: 9.62 });
+    expect(order).toMatchObject({ status: "awaiting_fiat", amountUsdc: 83.4, rate: 11.99 });
 
     const mine = await (await app.request("/orders", authed(token))).json();
     expect(mine.orders.map((o: { id: string }) => o.id)).toContain(order.id);

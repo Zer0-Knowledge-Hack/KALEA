@@ -1,3 +1,7 @@
+import { priceVerdict, spreadVsReference, type PricePolicy, type PriceVerdict, type ReferenceRate } from "./pricing";
+
+export * from "./pricing";
+
 export type Side = "buy" | "sell";
 export type PaymentMethod = "qr_simple" | "bank_transfer";
 
@@ -41,6 +45,9 @@ export interface Quote {
   amountBob: number;
   amountUsdc: number;
   expiresAt: string;
+  /** Fraction vs market reference; positive = worse for the user. Absent without a reference. */
+  spread?: number;
+  verdict?: PriceVerdict;
 }
 
 export interface Order {
@@ -75,25 +82,37 @@ export const DEMO_OPERATORS: Operator[] = [
   { id: "op_3", alias: "Chuqui USDC", completedOrders: 96, rating: 4.8, methods: ["bank_transfer"] },
 ];
 
+// Rates seeded near the Binance P2P BOB market (Nov 2026); demo only.
 export const DEMO_OFFERS: Offer[] = [
-  { id: "of_1", operatorId: "op_1", side: "buy", rate: 9.62, minBob: 100, maxBob: 20000, methods: ["qr_simple", "bank_transfer"] },
-  { id: "of_2", operatorId: "op_2", side: "buy", rate: 9.58, minBob: 50, maxBob: 5000, methods: ["qr_simple"] },
-  { id: "of_3", operatorId: "op_3", side: "buy", rate: 9.66, minBob: 500, maxBob: 50000, methods: ["bank_transfer"] },
-  { id: "of_4", operatorId: "op_1", side: "sell", rate: 9.41, minBob: 100, maxBob: 20000, methods: ["qr_simple", "bank_transfer"] },
-  { id: "of_5", operatorId: "op_2", side: "sell", rate: 9.45, minBob: 50, maxBob: 5000, methods: ["qr_simple"] },
+  { id: "of_1", operatorId: "op_1", side: "buy", rate: 11.99, minBob: 100, maxBob: 20000, methods: ["qr_simple", "bank_transfer"] },
+  { id: "of_2", operatorId: "op_2", side: "buy", rate: 12.04, minBob: 50, maxBob: 5000, methods: ["qr_simple"] },
+  { id: "of_3", operatorId: "op_3", side: "buy", rate: 11.97, minBob: 500, maxBob: 50000, methods: ["bank_transfer"] },
+  { id: "of_4", operatorId: "op_1", side: "sell", rate: 11.90, minBob: 100, maxBob: 20000, methods: ["qr_simple", "bank_transfer"] },
+  { id: "of_5", operatorId: "op_2", side: "sell", rate: 11.87, minBob: 50, maxBob: 5000, methods: ["qr_simple"] },
 ];
 
-export function rankQuotes(offers: Offer[], operators: Operator[], q: QuoteRequest): Quote[] {
+export interface RankOptions {
+  reference?: ReferenceRate | null;
+  policy?: PricePolicy;
+}
+
+export function rankQuotes(offers: Offer[], operators: Operator[], q: QuoteRequest, opts: RankOptions = {}): Quote[] {
   const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
+  const ref = opts.reference;
   return offers
     .filter((o) => o.side === q.side && o.methods.includes(q.method))
     .filter((o) => q.amountBob >= o.minBob && q.amountBob <= o.maxBob)
-    .map((offer) => ({
-      offer,
-      operator: operators.find((op) => op.id === offer.operatorId)!,
-      amountBob: q.amountBob,
-      amountUsdc: toUsdc(q.amountBob, offer.rate),
-      expiresAt,
-    }))
+    .map((offer): Quote => {
+      const spread = ref ? spreadVsReference(offer.side, offer.rate, ref) : undefined;
+      return {
+        offer,
+        operator: operators.find((op) => op.id === offer.operatorId)!,
+        amountBob: q.amountBob,
+        amountUsdc: toUsdc(q.amountBob, offer.rate),
+        expiresAt,
+        ...(spread !== undefined && { spread, verdict: priceVerdict(spread, opts.policy) }),
+      };
+    })
+    .filter((quote) => quote.verdict !== "rejected")
     .sort((a, b) => (q.side === "buy" ? b.amountUsdc - a.amountUsdc : a.amountUsdc - b.amountUsdc));
 }

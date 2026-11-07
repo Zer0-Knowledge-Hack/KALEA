@@ -14,7 +14,7 @@ describe("rankQuotes", () => {
 
   it("en compra ordena primero la oferta que entrega más USDC", () => {
     const quotes = rank("buy", 1000, "qr_simple");
-    expect(quotes.map((q) => q.offer.id)).toEqual(["of_2", "of_1"]);
+    expect(quotes.map((q) => q.offer.id)).toEqual(["of_1", "of_2"]);
     expect(quotes[0].amountUsdc).toBeGreaterThan(quotes[1].amountUsdc);
   });
 

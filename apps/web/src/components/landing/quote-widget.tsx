@@ -2,12 +2,21 @@
 
 import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { DEMO_OFFERS, DEMO_OPERATORS, rankQuotes, type PaymentMethod, type Quote, type Side } from "@kalea/shared";
+import { DEMO_OFFERS, DEMO_OPERATORS, rankQuotes, type PaymentMethod, type Quote, type ReferenceRate, type Side } from "@kalea/shared";
 import { api } from "@/lib/api";
 import { useWallet } from "@/lib/wallet";
 
 const methods: [PaymentMethod, string][] = [["qr_simple", "QR Simple"], ["bank_transfer", "Transferencia"]];
 const fmt = (n: number, d = 2) => n.toLocaleString("es-BO", { minimumFractionDigits: d, maximumFractionDigits: d });
+
+function SpreadChip({ spread }: { spread?: number }) {
+  if (spread === undefined) return null;
+  const pct = Math.abs(spread * 100).toLocaleString("es-BO", { maximumFractionDigits: 2 });
+  if (Math.abs(spread) < 0.0005) return <span className="font-mono text-[10px] text-mute">= mercado</span>;
+  return spread < 0
+    ? <span className="font-mono text-[10px] text-lime">{pct}% mejor que mercado</span>
+    : <span className="font-mono text-[10px] text-mute">+{pct}% vs mercado</span>;
+}
 
 function Rolling({ value }: { value: string }) {
   return (
@@ -26,6 +35,7 @@ export function QuoteWidget() {
   const [amount, setAmount] = useState("1000");
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [live, setLive] = useState(false);
+  const [reference, setReference] = useState<ReferenceRate | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const { token, connect, account } = useWallet();
@@ -38,8 +48,8 @@ export function QuoteWidget() {
     const q = { side, amountBob, method };
     const t = setTimeout(() => {
       api.quotes(side, amountBob, method)
-        .then((r) => { setQuotes(r.quotes); setLive(true); })
-        .catch(() => { setQuotes(rankQuotes(DEMO_OFFERS, DEMO_OPERATORS, q)); setLive(false); });
+        .then((r) => { setQuotes(r.quotes); setReference(r.reference); setLive(true); })
+        .catch(() => { setQuotes(rankQuotes(DEMO_OFFERS, DEMO_OPERATORS, q)); setReference(null); setLive(false); });
     }, 250);
     return () => clearTimeout(t);
   }, [side, method, amountBob, valid]);
@@ -97,6 +107,16 @@ export function QuoteWidget() {
           ))}
         </div>
 
+        {reference && (
+          <div className="flex items-center justify-between rounded-xl bg-ink px-3 py-2 font-mono text-[11px] text-mute">
+            <span className="flex items-center gap-1.5">
+              <span className={`size-1.5 rounded-full ${reference.stale ? "bg-coral" : "bg-lime"}`} />
+              Mercado P2P {reference.stale && "(desactualizado)"}
+            </span>
+            <span className="text-paper">{fmt(side === "buy" ? reference.buy : reference.sell)} BOB/USDC</span>
+          </div>
+        )}
+
         <ul className="space-y-1.5">
           <AnimatePresence initial={false}>
             {quotes.map((q, i) => (
@@ -109,12 +129,15 @@ export function QuoteWidget() {
                     {i === 0 && <span className="ml-2 rounded bg-lime px-1.5 py-0.5 font-mono text-[10px] text-lime-ink">MEJOR</span>}
                     <span className="block font-mono text-[11px] text-mute">★ {q.operator.rating} · {q.operator.completedOrders} órdenes</span>
                   </span>
-                  <span className="font-mono text-xs text-soft">{fmt(q.offer.rate)} BOB</span>
+                  <span className="flex flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs text-soft">{fmt(q.offer.rate)} BOB</span>
+                    <SpreadChip spread={q.spread} />
+                  </span>
                 </button>
               </motion.li>
             ))}
           </AnimatePresence>
-          {valid && quotes.length === 0 && <li className="rounded-xl border border-dashed border-coral/50 p-3 text-sm text-coral">Sin ofertas para ese monto y método.</li>}
+          {valid && quotes.length === 0 && <li className="rounded-xl border border-dashed border-coral/50 p-3 text-sm text-coral">Sin ofertas a precio de mercado para ese monto y método.</li>}
           {!valid && <li className="p-1 text-sm text-coral">Ingresa un monto válido.</li>}
         </ul>
 

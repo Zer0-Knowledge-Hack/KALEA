@@ -1,4 +1,4 @@
-import type { Order, PaymentMethod, Quote, Side } from "@kalea/shared";
+import type { Order, PaymentMethod, Quote, ReferenceRate, Side } from "@kalea/shared";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
 
@@ -16,7 +16,8 @@ async function request<T>(path: string, init?: RequestInit & { token?: string })
 
 export const api = {
   quotes: (side: Side, amountBob: number, method: PaymentMethod) =>
-    request<{ quotes: Quote[] }>(`/quotes?side=${side}&amountBob=${amountBob}&method=${method}`),
+    request<{ quotes: Quote[]; reference: ReferenceRate | null }>(`/quotes?side=${side}&amountBob=${amountBob}&method=${method}`),
+  rates: () => request<{ reference: ReferenceRate | null }>("/rates"),
   challenge: (account: string) =>
     request<{ transaction: string; networkPassphrase: string }>(`/auth/challenge?account=${account}`),
   token: (transaction: string) =>

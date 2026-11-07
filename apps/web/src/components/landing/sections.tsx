@@ -2,14 +2,20 @@
 
 import { AnimatePresence, animate, motion, useInView, useMotionValue, useScroll, useSpring, useTransform } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { api } from "@/lib/api";
 import { QuoteWidget } from "./quote-widget";
 
 const eyebrow = "font-mono text-[11px] uppercase tracking-[0.18em] text-lime";
 
 /* Rate ticker — CSS marquee */
-const ticks = ["USDC/BOB 9.62", "QR Simple", "Liquidación ~5 s", "Escrow Soroban", "Sin custodia", "Comisión transparente", "Operadores verificados", "Stellar"];
+const ticks = ["Precio de mercado en vivo", "QR Simple", "Liquidación ~5 s", "Escrow Soroban", "Sin custodia", "Comisión transparente", "Operadores verificados", "Stellar"];
 export function Ticker() {
-  const row = [...ticks, ...ticks];
+  const [rate, setRate] = useState<string | null>(null);
+  useEffect(() => {
+    api.rates().then((r) => r.reference && setRate(`USDC/BOB ${r.reference.mid.toFixed(2)}`)).catch(() => {});
+  }, []);
+  const items = rate ? [rate, ...ticks] : ticks;
+  const row = [...items, ...items];
   return (
     <div className="overflow-hidden border-y border-line bg-ink-2 py-3">
       <div className="marquee flex w-max gap-10 whitespace-nowrap font-mono text-xs uppercase tracking-[0.16em] text-soft">
@@ -26,9 +32,9 @@ export function QuoteSection() {
       <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true, amount: 0.4 }} transition={{ duration: 0.7 }}>
         <p className={eyebrow}>Cotizador</p>
         <h2 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">Todas las ofertas.<br /><span className="text-soft">Ordenadas por lo que recibes.</span></h2>
-        <p className="mt-5 max-w-md text-soft">Kalea agrega las ofertas de operadores P2P y te muestra primero la que más te conviene para tu monto y tu método de pago. Sin buscar en grupos de WhatsApp.</p>
+        <p className="mt-5 max-w-md text-soft">Kalea compara cada oferta con el precio real del mercado P2P y te muestra primero la que más te conviene. Las ofertas abusivas o sospechosamente baratas no aparecen.</p>
         <dl className="mt-8 grid grid-cols-3 gap-4 border-t border-line pt-6">
-          {[["5 min", "cotización fija"], ["0", "custodia"], ["2", "métodos locales"]].map(([v, l]) => (
+          {[["±2%", "banda de mercado"], ["0", "custodia"], ["2", "métodos locales"]].map(([v, l]) => (
             <div key={l}><dt className="text-2xl font-bold">{v}</dt><dd className="font-mono text-[11px] uppercase tracking-wider text-mute">{l}</dd></div>
           ))}
         </dl>
