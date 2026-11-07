@@ -16,7 +16,7 @@
 }
 
 html { scroll-behavior: smooth; }
-body { background: var(--color-ink); color: var(--color-paper); }
+body { background: var(--color-ink); color: var(--color-paper); overflow-x: clip; }
 ::selection { background: var(--color-lime); color: var(--color-lime-ink); }
 
 .grain::after {

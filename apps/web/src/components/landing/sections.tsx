@@ -33,7 +33,7 @@ export function QuoteSection() {
           ))}
         </dl>
       </motion.div>
-      <motion.div initial={{ opacity: 0, x: 40, rotate: 2 }} whileInView={{ opacity: 1, x: 0, rotate: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
+      <motion.div initial={{ opacity: 0, y: 40, rotate: 2 }} whileInView={{ opacity: 1, y: 0, rotate: 0 }} viewport={{ once: true, amount: 0.3 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
         <QuoteWidget />
       </motion.div>
     </section>
@@ -82,13 +82,14 @@ const pillars = [
   ["Disputas con evidencia", "Comprobantes y eventos de la orden quedan registrados para resolver cualquier conflicto."],
 ];
 function Spotlight({ t, d, i }: { t: string; d: string; i: number }) {
-  const [pos, setPos] = useState({ x: -999, y: -999 });
   return (
     <motion.div initial={{ opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.08, duration: 0.5 }}
-      onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); setPos({ x: e.clientX - r.left, y: e.clientY - r.top }); }}
-      onMouseLeave={() => setPos({ x: -999, y: -999 })}
-      style={{ background: `radial-gradient(320px circle at ${pos.x}px ${pos.y}px, rgba(200,242,58,.12), transparent 60%)` }}
-      className="rounded-3xl border border-line p-7 transition-colors hover:border-lime/40">
+      onPointerMove={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        e.currentTarget.style.setProperty("--x", `${e.clientX - r.left}px`);
+        e.currentTarget.style.setProperty("--y", `${e.clientY - r.top}px`);
+      }}
+      className="rounded-3xl border border-line bg-[radial-gradient(320px_circle_at_var(--x,-999px)_var(--y,-999px),rgba(200,242,58,.12),transparent_60%)] p-6 transition-colors hover:border-lime/40 sm:p-7">
       <span className="font-mono text-xs text-lime">0{i + 1}</span>
       <h3 className="mt-6 text-xl font-semibold">{t}</h3>
       <p className="mt-2 text-sm leading-relaxed text-soft">{d}</p>
@@ -110,13 +111,13 @@ function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
   const mv = useMotionValue(0);
-  const [v, setV] = useState(0);
+  const text = useTransform(mv, (x) => `${Math.round(x)}${suffix}`);
   useEffect(() => {
     if (!inView) return;
-    const c = animate(mv, to, { duration: 1.6, ease: "easeOut", onUpdate: (x) => setV(Math.round(x)) });
+    const c = animate(mv, to, { duration: 1.6, ease: "easeOut" });
     return () => c.stop();
   }, [inView, to, mv]);
-  return <span ref={ref}>{v}{suffix}</span>;
+  return <motion.span ref={ref}>{text}</motion.span>;
 }
 export function Comparison() {
   const rows: [string, string, string][] = [["Tiempo para encontrar oferta", "30+ min", "< 1 min"], ["Ofertas comparadas", "1–2", "Todas"], ["Riesgo de contraparte", "Alto", "Escrow"], ["Liquidación USDC", "Variable", "~5 s"]];
@@ -132,10 +133,10 @@ export function Comparison() {
           </div>
         </div>
         <div className="overflow-hidden rounded-3xl border border-line">
-          <div className="grid grid-cols-3 bg-ink-3 px-5 py-3 font-mono text-[11px] uppercase tracking-wider text-mute"><span /><span>Sin Kalea</span><span className="text-lime">Con Kalea</span></div>
+          <div className="grid grid-cols-3 gap-2 bg-ink-3 px-4 py-3 sm:px-5 font-mono text-[11px] uppercase tracking-wider text-mute"><span /><span>Sin Kalea</span><span className="text-lime">Con Kalea</span></div>
           {rows.map(([l, a, b], i) => (
             <motion.div key={l} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 * i }}
-              className="grid grid-cols-3 items-center border-t border-line px-5 py-4 text-sm">
+              className="grid grid-cols-3 items-center gap-2 border-t border-line px-4 py-4 text-xs sm:px-5 sm:text-sm">
               <span className="text-soft">{l}</span><span className="text-coral line-through decoration-coral/40">{a}</span><span className="font-semibold">{b}</span>
             </motion.div>
           ))}
