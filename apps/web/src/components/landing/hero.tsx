@@ -1,28 +1,36 @@
 "use client";
 
-import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { motion, useInView, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 
 const words = ["Tus", "dólares", "digitales,", "en", "bolivianos", "al", "toque."];
 
+const wavePaths = Array.from({ length: 9 }, (_, i) => {
+  const o = i * 38;
+  return `M-50 ${180 + o} C 250 ${40 + o}, 450 ${420 + o}, 720 ${200 + o} S 1150 ${20 + o}, 1500 ${260 + o}`;
+});
+
+// Lines draw in once; the idle drift is a cheap compositor-only transform on the group, paused off-screen.
 function Waves() {
   const reduce = useReducedMotion();
-  const paths = Array.from({ length: 14 }, (_, i) => {
-    const o = i * 26;
-    return `M-50 ${180 + o} C 250 ${40 + o}, 450 ${420 + o}, 720 ${200 + o} S 1150 ${20 + o}, 1500 ${260 + o}`;
-  });
+  const ref = useRef<SVGSVGElement>(null);
+  const visible = useInView(ref);
   return (
-    <svg viewBox="0 0 1440 700" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden>
-      {paths.map((d, i) => (
-        <motion.path key={i} d={d} fill="none" stroke={i % 5 === 0 ? "#ff7a70" : "#c8f23a"}
-          strokeWidth={i % 5 === 0 ? 1.2 : 0.7}
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={reduce ? { pathLength: 1, opacity: 0.35 } : { pathLength: 1, opacity: [0, 0.5, 0.25], pathOffset: [0, 0.04, 0] }}
-          transition={{ duration: 2.4, delay: 0.3 + i * 0.07, ease: "easeInOut",
-            pathOffset: { duration: 8 + i, repeat: Infinity, repeatType: "mirror" },
-            opacity: { duration: 2.4 + i * 0.1 } }}
-        />
-      ))}
+    <svg ref={ref} viewBox="0 0 1440 700" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden>
+      <motion.g
+        animate={reduce || !visible ? undefined : { x: [0, -40, 0], y: [0, 18, 0] }}
+        transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+        style={{ willChange: "transform" }}
+      >
+        {wavePaths.map((d, i) => (
+          <motion.path key={i} d={d} fill="none" stroke={i % 4 === 0 ? "#ff7a70" : "#c8f23a"}
+            strokeWidth={i % 4 === 0 ? 1.2 : 0.8} vectorEffect="non-scaling-stroke"
+            initial={reduce ? false : { pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 0.35 }}
+            transition={{ duration: 2, delay: 0.3 + i * 0.08, ease: "easeInOut" }}
+          />
+        ))}
+      </motion.g>
     </svg>
   );
 }

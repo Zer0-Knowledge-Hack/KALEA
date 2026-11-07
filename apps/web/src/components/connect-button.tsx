@@ -20,7 +20,9 @@ export function ConnectButton({ className = "" }: { className?: string }) {
   return (
     <button onClick={connect} disabled={busy}
       className={`rounded-full bg-lime px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-lime-ink transition hover:brightness-110 disabled:opacity-60 ${className}`}>
-      {label[status === "ready" ? "idle" : status]}
+      {status === "idle" || status === "ready"
+        ? <>Conectar<span className="hidden sm:inline"> wallet</span></>
+        : label[status]}
     </button>
   );
 }
