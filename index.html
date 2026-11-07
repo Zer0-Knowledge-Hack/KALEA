@@ -34,13 +34,53 @@ header{height:78px}.brand{font:850 30px/1 system-ui,sans-serif;letter-spacing:-.
 .timeline li[aria-current="step"]{border-color:var(--accent)}
 .timeline small{display:block;color:var(--accent);font-weight:700}
 
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-lines path {
+    stroke-dasharray: 1;
+    animation: draw-hero-line 2.8s cubic-bezier(.22, .7, .28, 1) both;
+  }
+
+  .hero-lines path:nth-child(even) { animation-delay: .2s; }
+  .hero-lines path:nth-child(3n) { animation-delay: .4s; }
+  .hero > div > :is(.eyebrow, h1, p, .button),
+  .quote {
+    animation: enter-panel .45s cubic-bezier(.2, .7, .2, 1) both;
+  }
+
+  .hero > div > h1:not([hidden]) { animation-delay: .06s; }
+  .hero > div > p:not([hidden]) { animation-delay: .12s; }
+  .hero > div > .button, .quote { animation-delay: .18s; }
+  #exchange > div:not([hidden]) {
+    animation: enter-panel .24s ease-out;
+  }
+
+  .timeline li { animation: enter-panel .25s ease-out both; }
+  .timeline li:nth-child(2) { animation-delay: .07s; }
+  .timeline li:nth-child(3) { animation-delay: .14s; }
+  .offer-content, .modes span, .button {
+    transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+  }
+}
+
+@keyframes draw-hero-line {
+  from { stroke-dashoffset: 1; opacity: 0; }
+  20% { opacity: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes enter-panel {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 </style>
 </head>
 <body>
 <header><a href="#" class="brand" aria-label="Kalea, inicio"><svg class="mark" viewBox="0 0 36 36" aria-hidden="true" fill="currentColor"><path d="M1 1h8v13h5l-5 7v12H1zM13 16 24 1h10L22 16l13 17H25z"/></svg>Kalea</a><nav aria-label="Navegación principal"><a href="#como" class="nav-how">Cómo funciona</a><a href="#intercambio" class="button">Probar demo <span aria-hidden="true">↗</span></a></nav></header>
 <main>
 <section class="hero" aria-labelledby="titulo">
-<svg class="hero-lines" viewBox="0 0 660 460" fill="none" aria-hidden="true"><g stroke="currentColor"><path d="M-80 398C90 440 191 88 660 46"/><path d="M-60 421C122 428 214 100 665 79"/><path d="M-46 441C147 416 245 116 667 113"/><path d="M-28 459C169 405 268 136 672 148"/><path d="M-13 480C195 394 295 159 677 182"/><path d="M-20 369C148 289 295 427 670 21"/><path d="M-20 335C149 260 306 395 676 4"/></g></svg>
+<svg class="hero-lines" viewBox="0 0 660 460" fill="none" aria-hidden="true"><g stroke="currentColor"><path pathLength="1" d="M-80 398C90 440 191 88 660 46"/><path pathLength="1" d="M-60 421C122 428 214 100 665 79"/><path pathLength="1" d="M-46 441C147 416 245 116 667 113"/><path pathLength="1" d="M-28 459C169 405 268 136 672 148"/><path pathLength="1" d="M-13 480C195 394 295 159 677 182"/><path pathLength="1" d="M-20 369C148 289 295 427 670 21"/><path pathLength="1" d="M-20 335C149 260 306 395 676 4"/></g></svg>
 <div><div class="eyebrow"><span class="dot" aria-hidden="true"></span> Intercambio P2P en Stellar</div><h1 id="titulo">USDC y bolivianos.<br><em>De persona a persona.</em></h1><p>Compra o vende USDC en Stellar con bolivianos. Compara ofertas de operadores y elige cómo pagar o recibir.</p><a class="button" href="#intercambio">Probar el intercambio <span aria-hidden="true">↗</span></a></div>
 <section class="quote" id="intercambio" aria-labelledby="quote-title">
 <div class="qhead"><span class="tag">Bolivia · Stellar</span><span class="badge">DEMO</span></div>
