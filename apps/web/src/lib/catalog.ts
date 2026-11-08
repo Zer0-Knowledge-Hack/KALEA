@@ -1,4 +1,4 @@
-import { COUNTRY_CATALOG, DEMO_CORRIDOR_PRICING, DEMO_INTEGRATORS, computeQuote, type Country, type Rail } from "@kalea/shared";
+import { COUNTRIES, COUNTRY_CATALOG, DEMO_CORRIDOR_PRICING, DEMO_INTEGRATORS, computeQuote, type Country, type Rail } from "@kalea/shared";
 import type { DemoQuote, QuoteRequest } from "./api";
 
 export const COUNTRY_NAMES: Record<Country, string> = {
@@ -24,6 +24,15 @@ export const RAIL_NAMES: Record<Rail, string> = {
 
 /** Countries with demo pricing in the shared catalog (the API serves the same set by default). */
 export const DEMO_COUNTRIES: Country[] = DEMO_CORRIDOR_PRICING.map((p) => p.country);
+
+/** Countries without demo pricing yet, in catalog order. */
+export const PLANNED_COUNTRIES: Country[] = COUNTRIES.filter((c) => !DEMO_COUNTRIES.includes(c));
+
+/** Every rail in the catalog, with whether a demo corridor already uses it. */
+export const RAILS: { rail: Rail; live: boolean }[] = [...new Set(COUNTRIES.flatMap((c) => COUNTRY_CATALOG[c].rails))].map((rail) => ({
+  rail,
+  live: DEMO_COUNTRIES.some((c) => (COUNTRY_CATALOG[c].rails as readonly Rail[]).includes(rail)),
+}));
 
 export interface Corridor {
   country: Country;
