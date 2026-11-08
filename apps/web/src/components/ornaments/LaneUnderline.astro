@@ -1,0 +1,10 @@
+---
+/** Lane underline: a dashed Apricot road line under an inline key phrase. The text color is unchanged. */
+---
+
+<span class="relative inline-block whitespace-nowrap pb-[0.2em]">
+  <slot />
+  <svg viewBox="0 0 100 6" preserveAspectRatio="none" class="pointer-events-none absolute inset-x-0 bottom-0 h-1.5 w-full" aria-hidden="true" focusable="false">
+    <line x1="0" y1="3" x2="100" y2="3" class="stroke-apricot" stroke-width="3" stroke-dasharray="8 6" vector-effect="non-scaling-stroke" />
+  </svg>
+</span>

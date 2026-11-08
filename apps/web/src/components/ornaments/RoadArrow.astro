@@ -1,0 +1,18 @@
+---
+/** Road-marking arrow, as painted on the pavement: straight, turn or split. Decorative; color follows `currentColor`. */
+interface Props {
+  kind: "straight" | "turn" | "split";
+  class?: string;
+}
+
+const { kind, class: className = "" } = Astro.props;
+const paths = {
+  straight: "M17 46 V18 H9 L24 2 L39 18 H31 V46 Z",
+  turn: "M10 46 V24 C10 16 15 12 22 12 H28 V4 L44 17 L28 30 V22 H24 C21 22 20 23 20 26 V46 Z",
+  split: "M19 46 V30 C19 24 15 21 10 18 L6 23 L2 6 L18 8 L14 12 C18 15 22 18 24 22 C26 18 30 15 34 12 L30 8 L46 6 L42 23 L38 18 C33 21 29 24 29 30 V46 Z",
+};
+---
+
+<svg viewBox="0 0 48 48" fill="currentColor" class:list={["pointer-events-none shrink-0", className]} aria-hidden="true" focusable="false">
+  <path d={paths[kind]} />
+</svg>
