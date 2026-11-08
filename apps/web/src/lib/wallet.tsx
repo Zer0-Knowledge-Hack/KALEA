@@ -2,12 +2,14 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { isConnected, requestAccess, signTransaction } from "@stellar/freighter-api";
-import { api } from "./api";
+import { api, type MerchantSession } from "./api";
 
 type Status = "idle" | "connecting" | "signing" | "ready" | "error";
 
+/** Merchant (liquidity provider) session obtained through SEP-10 with Freighter. */
 interface WalletState {
   account: string | null;
+  merchantId: string | null;
   token: string | null;
   status: Status;
   error: string | null;
@@ -16,20 +18,18 @@ interface WalletState {
 }
 
 const WalletContext = createContext<WalletState | null>(null);
-const STORAGE_KEY = "kalea.session";
+const STORAGE_KEY = "kalea.merchant-session";
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
-  const [account, setAccount] = useState<string | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [session, setSession] = useState<MerchantSession | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-      if (saved?.account && saved?.token) {
-        setAccount(saved.account);
-        setToken(saved.token);
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null") as MerchantSession | null;
+      if (saved?.account && saved?.token && saved?.merchantId) {
+        setSession(saved);
         setStatus("ready");
       }
     } catch {}
@@ -39,37 +39,34 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     try {
       setStatus("connecting");
-      if (!(await isConnected()).isConnected) {
-        throw new Error("Instala Freighter para continuar");
-      }
+      if (!(await isConnected()).isConnected) throw new Error("Install the Freighter wallet to continue");
       const access = await requestAccess();
       if (access.error) throw new Error(String(access.error.message ?? access.error));
 
       setStatus("signing");
-      const { transaction, networkPassphrase } = await api.challenge(access.address);
+      const { transaction, networkPassphrase } = await api.merchant.challenge(access.address);
       const signed = await signTransaction(transaction, { networkPassphrase, address: access.address });
       if (signed.error) throw new Error(String(signed.error.message ?? signed.error));
 
-      const session = await api.token(signed.signedTxXdr);
-      setAccount(session.account);
-      setToken(session.token);
+      const next = await api.merchant.token(signed.signedTxXdr);
+      setSession(next);
       setStatus("ready");
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(session)); } catch {}
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
     } catch (e) {
       setStatus("error");
-      setError(e instanceof Error ? e.message : "No se pudo conectar");
+      setError(e instanceof Error ? e.message : "Could not sign in");
     }
   }, []);
 
   const disconnect = useCallback(() => {
-    setAccount(null);
-    setToken(null);
+    setSession(null);
     setStatus("idle");
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
   }, []);
 
   return (
-    <WalletContext.Provider value={{ account, token, status, error, connect, disconnect }}>
+    <WalletContext.Provider
+      value={{ account: session?.account ?? null, merchantId: session?.merchantId ?? null, token: session?.token ?? null, status, error, connect, disconnect }}>
       {children}
     </WalletContext.Provider>
   );
@@ -77,7 +74,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
 export function useWallet() {
   const ctx = useContext(WalletContext);
-  if (!ctx) throw new Error("useWallet fuera de WalletProvider");
+  if (!ctx) throw new Error("useWallet must be used inside WalletProvider");
   return ctx;
 }
 

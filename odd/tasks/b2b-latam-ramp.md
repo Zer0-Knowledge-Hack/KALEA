@@ -59,7 +59,12 @@ The business model was redefined (2026-11-07/08) and validated with on-chain evi
   - About 860 lines, mostly tests.
   - PENDING: `apps/api/.env.example` could not be edited (path denied by permission settings). It needs `INTEGRATOR_API_KEYS` and `MERCHANT_ACCOUNTS`, applied by the user.
   - Previous plan: Add `/v1` integrator-scoped quotes and orders, integrator API-key auth (SEP-10 stays for LPs), prefunded balance and fee debit, English JSON errors, env and tests. Route: delegated. Est. ~300-400 lines.
-- [ ] **T4: Web**. English B2B landing (integrators, coverage, how it works, LPs), `lang="en"`, a country picker with an all-in price, integrator/LP dashboard stubs, and English wallet and connect copy. Remove the "Roadmap · Stellar Community Fund" eyebrow in `sections.tsx:159` (no funding-application content in the project). Route: delegated. Est. ~400-500 lines.
+- [x] **T4: Web**. Slice branch `feat/b2b-latam-ramp-t4-web`.
+  - English B2B landing, corridor quote demo through a server-only proxy (`/api/demo-quote`) with local demo-pricing fallback, and a merchant dashboard (SEP-10, orders, locked and unlocked rewards).
+  - `legacy.ts` removed; the shared package exports only the domain model. SCF eyebrow removed. README status updated.
+  - Checks: typecheck clean, tests 24 + 28 passed, web build OK, all language and legacy `rg` checks empty. The writer also smoke-tested `next start`. About 520 lines.
+  - PENDING: `apps/web/.env.example` needs `KALEA_DEMO_INTEGRATOR_KEY` (`.env*` paths are denied).
+  - Previous plan: English B2B landing (integrators, coverage, how it works, LPs), `lang="en"`, a country picker with an all-in price, integrator/LP dashboard stubs, and English wallet and connect copy. Remove the "Roadmap · Stellar Community Fund" eyebrow in `sections.tsx:159` (no funding-application content in the project). Route: delegated. Est. ~400-500 lines.
 
 ## Acceptance criteria
 

@@ -7,13 +7,13 @@ const grotesk = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-grotes
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
 
 export const metadata: Metadata = {
-  title: "Kalea · USDC ↔ BOB sobre Stellar",
-  description: "Cambia USDC y bolivianos con operadores P2P verificados, liquidación en Stellar y pago local por QR Simple o transferencia.",
+  title: "Kalea · B2B fiat <-> USDC ramps for LATAM on Stellar",
+  description: "Ramp infrastructure for businesses: embed local fiat <-> USDC on-ramps, off-ramps and QR payments across Latin America with one API, settled in USDC on Stellar.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${grotesk.variable} ${mono.variable}`}>
+    <html lang="en" className={`${grotesk.variable} ${mono.variable}`}>
       <body className="font-sans antialiased">
         <WalletProvider>{children}</WalletProvider>
       </body>
