@@ -5,13 +5,16 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@a3252b78c470c02df07e9d792dbb42d78481a7db # v4
+      - uses: actions/setup-node@1e60f620b9541d16abce96c54a30e55b2d0a5b81 # v4
         with:
           node-version: 22
           cache: pnpm
