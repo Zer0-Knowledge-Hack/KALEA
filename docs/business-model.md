@@ -28,11 +28,11 @@ Prices are quoted over a market reference rate (mid) for each country's currency
 | --- | --- | --- |
 | Buy (on-ramp: fiat -> USDC) | mid + markup | Merchant reward + insurance fund |
 | Sell (off-ramp: USDC -> fiat) | mid - discount | Merchant reward + insurance fund |
+| QR payment (USDC -> fiat paid to a third-party QR) | mid - discount | Merchant reward + insurance fund |
 
 | Parameter | Launch reference | Configurable |
 | --- | --- | --- |
-| Merchant reward on buys | 1.5% | Per country |
-| Merchant reward on sells | TODO (open decision) | Per country |
+| Merchant reward (buys, sells and QR payments) | 1.5% | Per country |
 | Insurance fund contribution | ~0.1% per order | Yes |
 
 ## Merchant reward
@@ -43,7 +43,7 @@ Prices are quoted over a market reference rate (mid) for each country's currency
 
 ## Worked example (illustrative)
 
-All numbers below are illustrative. They assume a 1.5% reward, a 0.1% insurance contribution, an illustrative 0.75% Kalea fee, no integrator markup, and amounts expressed in USD-equivalent at mid. The same reward rate is assumed on the sell side only for illustration.
+All numbers below are illustrative. They assume a 1.5% reward, a 0.1% insurance contribution, an illustrative 0.75% Kalea fee, no integrator markup, and amounts expressed in USD-equivalent at mid. The 1.5% reward applies to every order type.
 
 **Buy: end user receives 100 USDC**
 
