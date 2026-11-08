@@ -24,11 +24,15 @@ export function setup(overrides: Partial<AppConfig> = {}) {
     ...overrides,
   });
 
-  const call = (path: string, init: { method?: string; body?: unknown; key?: string; token?: string } = {}) =>
+  const call = (
+    path: string,
+    init: { method?: string; body?: unknown; key?: string; token?: string; headers?: Record<string, string> } = {},
+  ) =>
     app.request(path, {
       method: init.method ?? (init.body === undefined ? "GET" : "POST"),
       headers: {
         "Content-Type": "application/json",
+        ...init.headers,
         ...(init.key ? { "X-API-Key": init.key } : {}),
         ...(init.token ? { Authorization: `Bearer ${init.token}` } : {}),
       },
