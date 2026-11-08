@@ -5,13 +5,16 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@a15d269cd4658e1107c09f1fabf4cbd7bd1f308a # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: pnpm
@@ -19,3 +22,33 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm --filter @kalea/web build
+
+  contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          components: clippy, rustfmt
+          targets: wasm32v1-none
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: contracts
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+      - name: Install stellar-cli
+        shell: bash
+        env:
+          STELLAR_CLI_SHA256: 207544486734fccb4df1afc4a7745478f9f1e21688b2f9506f0ef36f60ce3fdc
+        run: |
+          archive="$RUNNER_TEMP/stellar-cli.tar.gz"
+          curl --fail --silent --show-error --location --output "$archive"             https://github.com/stellar/stellar-cli/releases/download/v28.0.0/stellar-cli-28.0.0-x86_64-unknown-linux-gnu.tar.gz
+          echo "$STELLAR_CLI_SHA256  $archive" | sha256sum --check --strict
+          tar --extract --gzip --file "$archive" --directory "$RUNNER_TEMP" stellar
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - run: stellar --version
+      - run: stellar contract build --meta source_repo=github:Zer0-Knowledge-Hack/KALEA

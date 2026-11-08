@@ -1,0 +1,23 @@
+---
+/** Step badge: a mono step number in a square with the top-left corner chamfered (building cut). */
+interface Props {
+  n: number;
+  variant?: "ocean" | "outline" | "apricot" | "deep";
+}
+
+const { n, variant = "ocean" } = Astro.props;
+
+const look = {
+  ocean: { shape: "fill-ocean", text: "text-white" },
+  outline: { shape: "fill-white stroke-ocean", text: "text-ocean" },
+  apricot: { shape: "fill-apricot", text: "text-ink" },
+  deep: { shape: "fill-deep", text: "text-white" },
+}[variant];
+---
+
+<span class="relative grid size-11 shrink-0 place-items-center font-mono text-sm font-medium">
+  <svg viewBox="0 0 44 44" class="absolute inset-0 size-full" aria-hidden="true" focusable="false">
+    <polygon points="13,1.25 42.75,1.25 42.75,42.75 1.25,42.75 1.25,13" class={look.shape} stroke-width="2.5" stroke-linejoin="round" />
+  </svg>
+  <span class:list={["relative", look.text]}>{String(n).padStart(2, "0")}</span>
+</span>
