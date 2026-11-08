@@ -45,7 +45,12 @@ The business model was redefined (2026-11-07/08) and validated with on-chain evi
 ## Tasks
 
 - [x] **T1: Docs (English, B2B LATAM)**. Slice branch `feat/b2b-latam-ramp-t1-docs`. Checks: no Spanish characters (`rg` exit 1), no "not responsible" wording, all 18 relative links resolve. About 430 lines. TODOs left in the docs for open product decisions: volume tiers, how the integrator markup is collected, the sell-side reward, timeouts, dispute ownership. Follow-up commit removed all funding-application material (user request: Kalea is an independent project). Previous plan: Rewrite `README.md`. Add `docs/business-model.md`, `docs/architecture.md`, `docs/order-lifecycle.md`. Translate `contracts/README.md`, add `legacy/README.md`, and add `.atl/` to `.gitignore`. Route: delegated (2+ non-trivial files). Est. ~350-450 lines.
-- [ ] **T2: Shared domain model**. Add Country, FiatCurrency, Rail, Integrator and LiquidityProvider. Replace `amountBob` with `fiatAmount` + `fiatCurrency`. Add a quote with the price breakdown, a single `OrderStatus` lifecycle with escrow-first ordering, and LATAM demo data. Rewrite the tests in English. Route: delegated. Est. ~250-300 lines.
+- [x] **T2: Shared domain model**. Slice branch `feat/b2b-latam-ramp-t2-domain`.
+  - New `domain.ts` with one `merchantRewardBps` per corridor (150) and the `qr_payment` order kind. The old model stays in `legacy.ts` as deprecated.
+  - The package root still exports the legacy `Order`, `Quote` and `OrderStatus`; the new ones are `RampOrder`, `RampQuote` and `RampOrderStatus` until T3/T4 migrate.
+  - RED was observed (module missing). GREEN: shared 24/24, api 10/10, typecheck clean. Parent spot check re-ran `pnpm test` and `pnpm typecheck`.
+  - About 420 lines; the legacy shim and the QR change pushed it over the estimate.
+  - Previous plan: Add Country, FiatCurrency, Rail, Integrator and LiquidityProvider. Replace `amountBob` with `fiatAmount` + `fiatCurrency`. Add a quote with the price breakdown, a single `OrderStatus` lifecycle with escrow-first ordering, and LATAM demo data. Rewrite the tests in English. Route: delegated. Est. ~250-300 lines.
 - [ ] **T3: API**. Add `/v1` integrator-scoped quotes and orders, integrator API-key auth (SEP-10 stays for LPs), prefunded balance and fee debit, English JSON errors, env and tests. Route: delegated. Est. ~300-400 lines.
 - [ ] **T4: Web**. English B2B landing (integrators, coverage, how it works, LPs), `lang="en"`, a country picker with an all-in price, integrator/LP dashboard stubs, and English wallet and connect copy. Remove the "Roadmap · Stellar Community Fund" eyebrow in `sections.tsx:159` (no funding-application content in the project). Route: delegated. Est. ~400-500 lines.
 
