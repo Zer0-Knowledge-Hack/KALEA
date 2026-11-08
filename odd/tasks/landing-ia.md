@@ -17,7 +17,7 @@ Reorder and rewrite the landing so a B2B buyer understands it as quickly as the 
 
 - [x] T1 new section order and copy, integrator-only (merchant content removed). Route: delegated writer.
 - [x] T2 visual redesign: abstract and concise; no pills; typography, lines and whitespace instead of boxes; hero ornament as the protagonist; quote widget in its own section; about 8 sections. Route: delegated writer.
-- [ ] T3 i18n: en (`/`), neutral LATAM Spanish (`/es/`), Brazilian Portuguese (`/pt-br/`); language switcher, hreflang, localized quote widget; CONTRIBUTING language rule updated. Route: delegated writer.
+- [x] T3 i18n: en (`/`), neutral LATAM Spanish (`/es/`), Brazilian Portuguese (`/pt-br/`); language switcher, hreflang, localized quote widget; CONTRIBUTING language rule updated. Route: delegated writer.
 
 ## Checks
 
@@ -64,3 +64,19 @@ Route: delegated writer. No runnable RED test applies (static Astro layout and s
 - `pnpm --filter @kalea/web build`: 2 pages built, complete.
 - Visual (http://localhost:3000, quote island hydrated by scrolling): 1440 px scrollWidth 1440; 390 px scrollWidth 390.
 - Open: `CONTACT_URL` is still a placeholder; Building bars ornament not used (it implies metrics the product does not have).
+
+## T3 evidence
+
+Route: delegated writer. Test-first exception: no runnable RED test exists for static copy; the type-level guard was proven by removing a key instead (below). Checks: typecheck, build, built-HTML grep, CDP switcher check and screenshots.
+
+- Structure: `apps/web/src/i18n/` holds `locales.ts` (locale list and per-locale `html lang`, hreflang, `og:locale`, Intl tag, switcher label), `en.ts` (source of truth; `Dictionary = typeof en`), `es.ts` and `pt-br.ts` (typed `Dictionary`), `format.ts` (`fill`, `joinList`; island-safe) and `index.ts` (`getLocale`, `useTranslations`, `localizedPath`).
+- Routing: Astro built-in `i18n` (`locales: ["en", "es", "pt-br"]`, `defaultLocale: "en"`, `prefixDefaultLocale: false`); pages `index.astro`, `es/index.astro`, `pt-br/index.astro` are identical thin wrappers that render `components/landing/Landing.astro` with `getLocale(Astro.currentLocale)`. `/app` untouched and English.
+- One component set: every section takes `locale`; the quote widget receives its strings, Intl tag and localized country/rail names as island props (API values unchanged). Numbers: en-US `1,000.00`, es-419 `BOB 1,000.00` (CLDR es-419 uses period decimals), pt-BR `R$ 1.000,00`; the amount input accepts a comma decimal.
+- Base: `<html lang>` en / es-419 / pt-BR, localized title, description, og/twitter and og:image:alt, `og:locale` (en_US, es_LA, pt_BR) plus `og:locale:alternate`, hreflang en / es / pt-BR / x-default. URLs are root-relative because `site` is not set (Google expects absolute hreflang URLs once the domain exists).
+- Switcher: `EN · ES · PT` mono text links (current: white with an Apricot underline and `aria-current="true"`), in the bar from `sm`, inside the menu on phones. On click it appends the section in view; CDP: scrolled to `#pricing` on `/`, clicked ES → `/es/#pricing`, `lang=es-419`, ES marked current.
+- Review fixes: Value "Local rails" reads "Pix, SPEI, Yape, QR Simple and bank transfer" (es "… y transferencia bancaria", pt "… e transferência bancária"); label contexts keep "Bank transfer". Coverage city grid shows at `w-20` on phones.
+- `pnpm --filter @kalea/web typecheck`: 0 errors, 0 warnings, 0 hints (49 files). Removing `hero.primary` from `es.ts` → 1 error ts(2741) "Property 'primary' is missing"; restored.
+- `pnpm --filter @kalea/web build`: 4 pages (`/`, `/es/`, `/pt-br/`, `/app`), complete; lang, titles and hreflang verified in `dist`.
+- Leftover English: every `en.ts` string that differs from the translation was searched in the built es/pt-br HTML; the only hits were substrings of code, comments or translated words (for example "Product" inside "Producto").
+- Visual (dev server): scrollWidth `/` 1440/390, `/es/` 1440/390, `/pt-br/` 1440/390; `/` at 1024 has no overflow. Fixed during review: widget rail tabs no longer wrap and the label column narrows on phones.
+- Open: hreflang must become absolute once `site` is set; the widget shows the API's 400 error message as returned (English).

@@ -1,10 +1,12 @@
 import { en, type Dictionary } from "./en";
+import { es } from "./es";
+import { ptBr } from "./pt-br";
 export { fill, joinList } from "./format";
 import { DEFAULT_LOCALE, LOCALES, LOCALE_META, type Locale } from "./locales";
 
 export { DEFAULT_LOCALE, LOCALES, LOCALE_META, type Dictionary, type Locale };
 
-const dictionaries: Record<Locale, Dictionary> = { en };
+const dictionaries: Record<Locale, Dictionary> = { en, es, "pt-br": ptBr };
 
 export const isLocale = (value: string | undefined): value is Locale => LOCALES.some((l) => l === value);
 
