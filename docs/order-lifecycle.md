@@ -77,6 +77,10 @@ Values are set per country and rail. TODO (open decision): default values.
 | `created` / `escrow_locked` -> `expired` | Timeout | Locked USDC refunded to the end user |
 | `fiat_sent` -> `disputed` | Either party, or `confirmation_timeout` | Escrow frozen |
 
+### QR payment (sell variant)
+
+A QR payment is a sell order where the merchant pays a third-party local QR code (for example a store or a bill) instead of the end user's own account. It uses the same statuses and fund movements as a sell. The only difference is the fiat destination: the merchant attaches the payment receipt when marking `fiat_sent`, and the end user confirms the payee was paid.
+
 ## Disputes
 
 - A dispute resolves to `released` (fiat was paid) or `cancelled` (fiat was not paid; USDC refunded to the depositor).
