@@ -95,8 +95,8 @@ The effective rate is a blended average across volume tiers. Rates in this table
 
 ## Competitive context
 
-- **P2PKit / p2p.me** run a P2P fiat <-> USDC model on Base. We have found no Stellar presence for them.
-- **Stellar anchors** in the region typically serve a single country.
+- **EVM alternatives** run P2P fiat <-> stablecoin models on networks like Base, but face gas costs, contract complexity, and lack native fee-bumping.
+- **Stellar anchors** in the region typically serve a single country and require heavy institutional licensing.
 - Kalea's position: one integrator API across multiple LATAM countries, settled in Stellar USDC, with liquidity from independent merchants.
 
 ## Regulation

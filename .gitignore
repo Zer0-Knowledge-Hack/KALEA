@@ -5,6 +5,7 @@ out/
 target/
 *.tsbuildinfo
 .atl/
+.vscode/
 
 # Sensitive / never-commit files
 **/.env
@@ -20,4 +21,3 @@ secrets/
 .config/stellar/
 *.log
 .DS_Store
-.vscode/settings.json

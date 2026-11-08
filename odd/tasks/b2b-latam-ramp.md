@@ -12,7 +12,7 @@ README, domain types, API, landing and tests all describe a consumer exchange fo
 
 ## Why
 
-The business model was redefined (2026-11-07/08) and validated with on-chain evidence from p2p.me / P2PKit. The repo must tell the same story before building the Soroban escrow. Kalea is an independent project; funding applications are not part of the repository.
+The business model was redefined (2026-11-07/08) and validated with market and on-chain evidence. The repo must tell the same story before building the Soroban escrow. Kalea is an independent project; funding applications are not part of the repository.
 
 ## Business model (source of truth for all tasks)
 
