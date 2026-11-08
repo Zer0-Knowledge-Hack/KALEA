@@ -1,26 +1,40 @@
 ---
 import { COUNTRIES, COUNTRY_CATALOG } from "@kalea/shared";
 import { COUNTRY_NAMES, DEMO_COUNTRIES, RAIL_NAMES } from "../../lib/catalog";
-import { eyebrow } from "./styles";
+import CityGrid from "../ornaments/CityGrid.astro";
+import { eyebrowLight } from "./styles";
 ---
 
-<section id="coverage" class="mx-auto max-w-6xl px-4 py-28 sm:px-6">
-  <p class={eyebrow}>LATAM coverage</p>
-  <h2 class="mt-4 max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">Local rails, one integration.</h2>
-  <p class="mt-5 max-w-xl text-deep-soft">Each country has its own currency, rails and pricing. Corridors marked as demo have pricing on testnet today; the rest are next in line.</p>
-  <div class="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    {COUNTRIES.map((c, i) => {
-      const live = DEMO_COUNTRIES.includes(c);
-      return (
-        <div data-reveal style={`--delay:${i * 0.05}s`} class="rounded-3xl border border-deep-line p-6 transition-colors hover:border-apricot/40">
-          <div class="flex items-center justify-between font-mono text-xs">
-            <span class="text-apricot">{COUNTRY_CATALOG[c].currency}</span>
-            <span class={live ? "text-apricot" : "text-deep-muted"}>{live ? "Demo corridor" : "Planned"}</span>
+<section id="coverage" class="bg-surface text-ink">
+  <div class="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-28">
+    <div class="grid items-center gap-10 lg:grid-cols-[1fr_auto]">
+      <div>
+        <p class={eyebrowLight}>LATAM coverage</p>
+        <h2 class="mt-4 max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">Local rails, one integration.</h2>
+        <p class="mt-5 max-w-xl text-ink/75">Each country has its own currency, rails and pricing. Corridors marked as demo have pricing on testnet today; the rest are next in line.</p>
+      </div>
+      <!-- Decorative city grid panel, kept beside the copy (never behind text). -->
+      <div class="hidden rounded-sheet border border-line bg-white p-3 lg:block">
+        <CityGrid class="block size-52" />
+      </div>
+    </div>
+    <div class="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {COUNTRIES.map((c, i) => {
+        const live = DEMO_COUNTRIES.includes(c);
+        return (
+          <div data-reveal style={`--delay:${i * 0.05}s`} class="rounded-card border border-line bg-white p-6 transition-colors hover:border-ocean/50">
+            <div class="flex items-center justify-between font-mono text-xs">
+              <span class="text-ocean">{COUNTRY_CATALOG[c].currency}</span>
+              <span class:list={["inline-flex items-center gap-1.5", live ? "text-ocean" : "text-muted"]}>
+                {live && <svg viewBox="0 0 10 10" class="size-2 fill-apricot" aria-hidden="true" focusable="false"><polygon points="5,0 10,10 0,10" /></svg>}
+                {live ? "Demo corridor" : "Planned"}
+              </span>
+            </div>
+            <h3 class="mt-6 text-xl font-semibold">{COUNTRY_NAMES[c]}</h3>
+            <p class="mt-2 text-sm text-ink/75">{COUNTRY_CATALOG[c].rails.map((r) => RAIL_NAMES[r]).join(" · ")}</p>
           </div>
-          <h3 class="mt-6 text-xl font-semibold">{COUNTRY_NAMES[c]}</h3>
-          <p class="mt-2 text-sm text-deep-soft">{COUNTRY_CATALOG[c].rails.map((r) => RAIL_NAMES[r]).join(" · ")}</p>
-        </div>
-      );
-    })}
+        );
+      })}
+    </div>
   </div>
 </section>
