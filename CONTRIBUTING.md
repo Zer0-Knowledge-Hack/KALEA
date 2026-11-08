@@ -43,13 +43,27 @@ The web runs on port 3000 because the API only accepts browser requests from `WE
 | --- | --- | --- |
 | `packages/shared` | Domain model: corridors, rails, quotes, orders, lifecycle | `vitest` |
 | `apps/api` | Hono API on Node.js: integrator `/v1`, merchant SEP-10, public demo endpoints | `vitest`, `tsc` |
-| `apps/web` | Astro static site with Preact islands | `astro check`, `astro build` |
-| `contracts` | Soroban escrow (not implemented yet) | — |
+| `apps/web` | Astro static site with Preact islands | `astro check`, `astro build`, `playwright` (E2E) |
+| `contracts` | Soroban smart contracts (`kalea-escrow` v1) | `cargo test`, `stellar contract build` |
 | `docs` | Business model, architecture, order lifecycle | Review |
 | `legacy` | Frozen consumer prototype, reference only | Do not edit |
 | `.github/workflows` | CI checks (`ci.yml`) and secret detection (`secrets.yml`) | Actions |
 
+> **Note for AI agents:** If you are an AI assistant working on this repository, you must read and adhere to [AGENTS.md](AGENTS.md) in addition to this guide.
+
 ## Working on code
+
+### Testing tiers
+
+We practice tests-first development across three testing tiers:
+
+1. **Unit tests (`pnpm test:unit` & `cargo test`):**
+   - Pure functions, calculations, corridor catalogs, domain models (`packages/shared`), isolated API handlers (`apps/api`), and host smart contract logic (`contracts/escrow`).
+   - Run frequently during development. Fast and deterministic.
+2. **Integration tests (`pnpm test:integration`):**
+   - Multi-step simulations of the full order escrow lifecycle in `apps/api/src/lifecycle.test.ts` (quotes, order matching, simulated escrow funding, payment transitions, balance debits, disputes).
+3. **End-to-End tests (`pnpm test:e2e`):**
+   - Browser verification with Playwright in `apps/web` (landing page layout, interactive Preact islands, corridor quote calculator).
 
 ### Tests first
 
@@ -115,8 +129,10 @@ Open the PR against `main`. The description is pre-filled from `.github/pull_req
 
 ### Review and merge
 
-- `main` is protected. A merge needs a pull request, a passing, up-to-date `check` CI job and resolved conversations.
-- Only the maintainer can merge into `main`. Force pushes and branch deletion are disabled.
+- `main` is protected. Every change must enter through a reviewed pull request. Direct pushes and force pushes are blocked (`allow_force_pushes: false`, `enforce_admins: true`).
+- A PR requires **at least 1 review approval from someone other than the author** before merging.
+- All three status checks must be green: `check` (typecheck, tests, web build, AI commit guard), `contracts` (fmt, clippy, cargo test, wasm build), and `scan` (Gitleaks).
+- Stale approvals are dismissed if new commits are pushed, and all conversation threads must be resolved.
 - Address review comments with new commits. Do not force-push over a branch that is under review.
 
 ## Before you open a PR

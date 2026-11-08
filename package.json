@@ -9,6 +9,9 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
+    "test:unit": "pnpm -r --if-present test:unit",
+    "test:integration": "pnpm --filter @kalea/api test:integration",
+    "test:e2e": "pnpm --filter @kalea/web test:e2e",
     "brand:kit": "node scripts/brand-kit.mjs"
   },
   "devDependencies": {
