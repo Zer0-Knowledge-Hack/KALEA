@@ -1,0 +1,39 @@
+---
+import Lane from "../ornaments/Lane.astro";
+import StepBadge from "../ornaments/StepBadge.astro";
+import { eyebrowLight } from "./styles";
+
+const steps = [
+  ["Quote", "Your backend requests a quote for a country, side (on-ramp or off-ramp), rail and amount. Your end user sees one all-in price."],
+  ["Match and lock", "You create the order and Kalea matches it with a merchant. The USDC side is locked in a per-order Soroban escrow with fixed amounts before any fiat moves."],
+  ["Fiat moves locally", "The end user and the merchant exchange local fiat over Pix, SPEI, Yape, QR Simple or a bank transfer, under the merchant's own accounts. Kalea never holds local fiat."],
+  ["Release", "Once the fiat recipient confirms, the escrow releases USDC, credits the merchant reward and the insurance fund, and Kalea debits your fee from your prefunded balance."],
+];
+const badges = ["ocean", "outline", "apricot", "deep"] as const;
+// Lanes run Ocean, then Apricot into the last step.
+const lanes = ["ocean", "ocean", "apricot"] as const;
+---
+
+<section id="how-it-works" class="bg-white text-ink">
+  <div class="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-28">
+    <p class={eyebrowLight}>How it works</p>
+    <h2 class="mt-4 max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">Escrow-first. Fiat stays local. Kalea settles only USDC.</h2>
+    <ol class="mt-14 flex flex-col lg:grid lg:grid-cols-4 lg:gap-12">
+      {steps.map(([t, d], i) => (
+        <li class="relative flex flex-col" data-reveal style={`--delay:${i * 0.08}s`}>
+          <div class="cut-tr h-full bg-surface p-6">
+            <StepBadge n={i + 1} variant={badges[i]} />
+            <h3 class="mt-6 text-xl font-semibold">{t}</h3>
+            <p class="mt-2 text-sm leading-relaxed text-ink/75">{d}</p>
+          </div>
+          {lanes[i] && (
+            <>
+              <Lane color={lanes[i]} direction="v" class="mx-auto my-2 lg:hidden" />
+              <Lane color={lanes[i]} direction="h" class="absolute -right-12 top-[34px] hidden lg:block" />
+            </>
+          )}
+        </li>
+      ))}
+    </ol>
+  </div>
+</section>
