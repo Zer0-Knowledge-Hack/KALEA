@@ -10,6 +10,9 @@ const {
   title = "Kalea · B2B fiat <-> USDC ramps for LATAM on Stellar",
   description = "Ramp infrastructure for businesses: embed local fiat <-> USDC on-ramps, off-ramps and QR payments across Latin America with one API, settled in USDC on Stellar.",
 } = Astro.props;
+
+// Absolute when `site` is configured in astro.config, otherwise root-relative.
+const ogImage = Astro.site ? new URL("/og.png", Astro.site).href : "/og.png";
 ---
 
 <!doctype html>
@@ -21,17 +24,23 @@ const {
     <meta name="description" content={description} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta name="theme-color" content="#0a0a0a" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap"
-    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Kalea" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Kalea logo over a street in perspective" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="theme-color" content="#1E578F" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <!-- Marks the page as scripted so reveal-on-scroll styles apply only when JavaScript runs. -->
     <script is:inline>document.documentElement.classList.add("js");</script>
   </head>
-  <body class="font-sans antialiased">
+  <body class="font-text antialiased">
     <slot />
   </body>
 </html>
