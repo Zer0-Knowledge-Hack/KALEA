@@ -3,7 +3,7 @@ name = "kalea-escrow"
 version = "0.1.0"
 edition = "2021"
 publish = false
-description = "KALEA · escrow USDC por orden para liquidación P2P B2B en Stellar (Soroban)"
+description = "Kalea per-order USDC escrow for B2B ramp settlement on Stellar (Soroban)"
 license = "Apache-2.0"
 
 [lib]
