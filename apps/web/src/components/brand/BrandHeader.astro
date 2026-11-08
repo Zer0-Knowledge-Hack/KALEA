@@ -1,0 +1,41 @@
+---
+/** Brand page header: logo home link, page label, language switcher for /brand/ and a link back to the landing. */
+import { Logo } from "../logo";
+import { LOCALES, LOCALE_META, localizedPath, useTranslations, type Locale } from "../../i18n";
+import { BRAND_PATH } from "./assets";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const languages = LOCALES.map((l) => ({ ...LOCALE_META[l], href: localizedPath(l, BRAND_PATH), current: l === locale }));
+---
+
+<header class="border-b border-deep-line bg-deep">
+  <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+    <div class="flex min-w-0 items-center gap-4">
+      <a href={localizedPath(locale)} aria-label={t.nav.home} class="shrink-0"><Logo tone="on-dark" /></a>
+      <span class="hidden border-l border-deep-line pl-4 font-mono text-[11px] uppercase tracking-[0.16em] text-deep-muted sm:inline">{t.brand.header.label}</span>
+    </div>
+    <div class="flex items-center gap-4 sm:gap-6">
+      <ul aria-label={t.nav.language} class="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em]">
+        {languages.map((l, i) => (
+          <li class="flex items-center gap-1.5">
+            {i > 0 && <span aria-hidden="true" class="text-deep-muted">·</span>}
+            <a
+              href={l.href}
+              hreflang={l.hreflang}
+              lang={l.htmlLang}
+              aria-label={l.name}
+              aria-current={l.current ? "true" : undefined}
+              class:list={["py-2 transition hover:text-white", l.current ? "text-white underline decoration-apricot underline-offset-[6px]" : "text-deep-muted"]}
+            >{l.label}</a>
+          </li>
+        ))}
+      </ul>
+      <a href={localizedPath(locale)} class="hidden whitespace-nowrap text-sm text-deep-soft transition hover:text-white sm:inline">{t.brand.header.back}</a>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,99 @@
+---
+/** Logo: mark and lockup, clear space and minimum sizes, then every variant on its own background with downloads. */
+import { useTranslations, type Locale } from "../../i18n";
+import { container, eyebrowLight, h2, sectionY } from "../landing/styles";
+import { LOGO_VARIANTS, asset, downloadLink, pngAsset } from "./assets";
+
+interface Props {
+  locale: Locale;
+}
+
+const t = useTranslations(Astro.props.locale).brand.logo;
+// The lockup viewBox is exactly as tall as the mark (36 units), so the image height is the mark height
+// and half of it is the clear space. Values in px: phones, then sm and up.
+const LOCKUP_RATIO = 154.58 / 36;
+const fileLabels = { lockup: t.lockupFile, mark: t.markFile, icon: t.iconFile } as const;
+---
+
+<section id="logo" class="scroll-mt-6 bg-surface text-ink">
+  <div class:list={[container, sectionY]}>
+    <div class="grid gap-6 lg:grid-cols-12 lg:items-end">
+      <div class="lg:col-span-7">
+        <p class={eyebrowLight}>{t.eyebrow}</p>
+        <h2 class:list={[h2, "mt-5"]}>{t.headline}</h2>
+      </div>
+      <p class="max-w-md text-lg text-ink/75 lg:col-span-5">{t.sub}</p>
+    </div>
+
+    <div class="mt-16 grid gap-6 lg:grid-cols-12">
+      <!-- Clear space: the tinted band around the lockup is half a mark height wide on every side. -->
+      <figure class="flex flex-col items-center justify-center gap-6 rounded-card bg-white px-4 py-12 lg:col-span-8">
+        <div class="bg-ocean-100 p-5 outline-2 outline-dashed outline-ocean/50 sm:p-8">
+          <div class="bg-white">
+            <img
+              src={asset("kalea-lockup.svg")}
+              alt={t.lockupAlt}
+              width={Math.round(40 * LOCKUP_RATIO)}
+              height="40"
+              class="block h-10 w-auto sm:h-16"
+            />
+          </div>
+        </div>
+        <figcaption class="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{t.clearSpaceLabel}</figcaption>
+      </figure>
+      <figure class="flex items-center justify-center rounded-card bg-white px-4 py-12 lg:col-span-4">
+        <img src={asset("kalea-mark.svg")} alt={t.markAlt} width="128" height="128" class="size-24 sm:size-32" />
+      </figure>
+    </div>
+
+    <dl class="mt-10 grid gap-6 sm:grid-cols-3">
+      {t.rules.map((rule) => (
+        <div class="border-t border-ink pt-4">
+          <dt class="font-mono text-[11px] uppercase tracking-[0.14em] text-ocean">{rule.term}</dt>
+          <dd class="mt-2 text-ink/80">{rule.detail}</dd>
+        </div>
+      ))}
+    </dl>
+
+    <h3 class="mt-20 text-2xl font-semibold tracking-tight">{t.variantsTitle}</h3>
+    <ul class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {LOGO_VARIANTS.map((v) => {
+        const copy = t.variants[v.key];
+        const square = v.key === "monoWhite" || v.key === "appIcon";
+        return (
+          <li class="flex flex-col overflow-hidden rounded-card bg-white">
+            <div class:list={["flex h-44 items-center justify-center px-6", v.bg]}>
+              <img
+                src={asset(v.preview)}
+                alt={copy.alt}
+                width={square ? 96 : Math.round(48 * LOCKUP_RATIO)}
+                height={square ? 96 : 48}
+                class:list={["block w-auto max-w-full", square ? "h-24" : "h-12"]}
+              />
+            </div>
+            <div class="flex flex-1 flex-col gap-3 p-5">
+              <p class="font-display text-lg font-semibold tracking-tight">{copy.name}</p>
+              <p class="text-sm text-ink/75">{copy.use}</p>
+              <!-- One row per file: its name, then the SVG and PNG downloads (PNG: transparent, 1024 px). -->
+              <ul class="mt-auto space-y-2 border-t border-line pt-3 print:hidden">
+                {Object.entries(v.files).map(([kind, file]) => {
+                  const label = fileLabels[kind as keyof typeof fileLabels];
+                  const png = file.replace(/\.svg$/, ".png");
+                  return (
+                    <li class="flex items-baseline justify-between gap-4">
+                      <span class="text-sm text-ink/75">{label}</span>
+                      <span class="flex gap-4 text-ocean">
+                        <a href={asset(file)} download={file} aria-label={`${label} · ${t.svg}`} class={downloadLink}>{t.svg}</a>
+                        <a href={pngAsset(file)} download={png} aria-label={`${label} · ${t.png}`} class={downloadLink}>{t.png}</a>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</section>

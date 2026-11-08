@@ -1,0 +1,42 @@
+---
+/**
+ * The brand guidelines page for one locale, for partners and collaborators. Pages under src/pages are
+ * thin wrappers around it. Content follows brand/README.md; the landing stays integrator-only.
+ */
+import Base from "../../layouts/Base.astro";
+import "../../styles/brand-print.css";
+import Footer from "../landing/Footer.astro";
+import { useTranslations, type Locale } from "../../i18n";
+import { BRAND_PATH } from "./assets";
+import BrandHeader from "./BrandHeader.astro";
+import Intro from "./Intro.astro";
+import Story from "./Story.astro";
+import LogoSection from "./LogoSection.astro";
+import ColorSection from "./ColorSection.astro";
+import TypeSection from "./TypeSection.astro";
+import ElementsSection from "./ElementsSection.astro";
+import RulesSection from "./RulesSection.astro";
+import Contact from "./Contact.astro";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const { meta } = useTranslations(locale).brand;
+---
+
+<Base locale={locale} title={meta.title} description={meta.description} path={BRAND_PATH} alternates>
+  <BrandHeader locale={locale} />
+  <main>
+    <Intro locale={locale} />
+    <Story locale={locale} />
+    <LogoSection locale={locale} />
+    <ColorSection locale={locale} />
+    <TypeSection locale={locale} />
+    <ElementsSection locale={locale} />
+    <RulesSection locale={locale} />
+    <Contact locale={locale} />
+  </main>
+  <Footer locale={locale} />
+</Base>

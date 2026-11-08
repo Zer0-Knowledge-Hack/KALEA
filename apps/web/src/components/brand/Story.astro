@@ -1,0 +1,35 @@
+---
+/** The idea behind the name and the mark. Basque is the only origin story (brand/README.md, section 1). */
+import { LogoMark } from "../logo";
+import { useTranslations, type Locale } from "../../i18n";
+import { container, eyebrowLight, h2, sectionY } from "../landing/styles";
+
+interface Props {
+  locale: Locale;
+}
+
+const t = useTranslations(Astro.props.locale).brand.story;
+---
+
+<section id="story" class="scroll-mt-6 bg-white text-ink">
+  <div class:list={[container, sectionY, "grid gap-12 lg:grid-cols-12 lg:items-center"]}>
+    <div class="lg:col-span-7">
+      <p class={eyebrowLight}>{t.eyebrow}</p>
+      <h2 class:list={[h2, "mt-5"]}>{t.headline}</h2>
+      <dl class="mt-12 divide-y divide-line border-y border-line">
+        {t.items.map((item) => (
+          <div class="grid gap-2 py-5 sm:grid-cols-[12rem_1fr] sm:gap-6">
+            <dt class="font-display text-xl font-semibold tracking-tight">{item.term}</dt>
+            <dd class="text-ink/75">{item.detail}</dd>
+          </div>
+        ))}
+      </dl>
+      <!-- Painted road line on the left edge; the sentence wraps, so the nowrap Highlight ornament is not used. -->
+      <p class="mt-6 border-l-4 border-apricot pl-4 font-semibold">{t.note}</p>
+    </div>
+    <!-- The mark at display size: two buildings, the street, and the crown they form together. -->
+    <div class="flex justify-center lg:col-span-4 lg:col-start-9">
+      <LogoMark size={220} tone="color" class="max-w-full" />
+    </div>
+  </div>
+</section>

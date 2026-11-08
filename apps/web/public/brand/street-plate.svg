@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64" width="300" height="64" role="img" aria-labelledby="title">
+  <title id="title">Street plate example: Bolivia kalea</title>
+  <rect x="1.25" y="1.25" width="297.5" height="61.5" rx="10" fill="#FFFFFF" stroke="#1E578F" stroke-width="2.5"/>
+  <text x="150" y="40" text-anchor="middle" font-family="Sometype Mono, monospace" font-size="22" font-weight="500" fill="#1E578F">Bolivia kalea</text>
+</svg>

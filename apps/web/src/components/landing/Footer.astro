@@ -19,6 +19,9 @@ const t = useTranslations(locale);
     <a href={localizedPath(locale)} aria-label={t.nav.home} class="normal-case"><Logo size={24} tone="on-dark" /></a>
     <span>{t.footer.copyright}</span>
     <span>{t.footer.status}</span>
-    <a href={REPO} class="hover:text-apricot">{t.footer.github}</a>
+    <span class="flex gap-6">
+      <a href={localizedPath(locale, "/brand/")} class="hover:text-apricot">{t.footer.brand}</a>
+      <a href={REPO} class="hover:text-apricot">{t.footer.github}</a>
+    </span>
   </div>
 </footer>

@@ -1,0 +1,71 @@
+/*
+ * Print stylesheet for the brand page (/brand/): turns it into an A4 guide.
+ * Used by the browser's Print dialog and by scripts/brand-kit.mjs (Page.printToPDF).
+ * Plain, unlayered CSS so it wins over the Tailwind utility layer without !important.
+ */
+@media print {
+  /* The cover bleeds to the edges; later pages keep a white band top and bottom for page breaks. */
+  @page {
+    size: A4;
+    margin: 12mm 0;
+  }
+  @page :first {
+    margin: 0;
+  }
+
+  /* Keep the brand colors, swatches and dark sections exactly as on screen. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+  body {
+    background: #ffffff;
+  }
+
+  /* Screen chrome: header with the language switcher, footer, table of contents and downloads. */
+  body > header,
+  body > footer,
+  nav[aria-labelledby="brand-toc"],
+  a[download] {
+    display: none;
+  }
+
+  /* One section per page start, with tighter vertical rhythm than on screen. */
+  main > section {
+    break-before: page;
+    padding: 36px 8mm;
+  }
+  main > section > div {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* Cover: the opening section fills the first page and centers its copy. */
+  main > section:first-child {
+    break-before: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 297mm;
+  }
+
+  /* Never split a card, figure or definition across pages, and keep headings with what follows. */
+  li,
+  figure,
+  dl > div {
+    break-inside: avoid;
+  }
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+  }
+
+  /* The closing section no longer needs room for the footer skyline. */
+  #contact {
+    padding-bottom: 48px;
+  }
+}

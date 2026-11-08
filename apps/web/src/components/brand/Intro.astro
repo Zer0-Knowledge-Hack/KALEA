@@ -1,0 +1,64 @@
+---
+/** Brand page opening on Deep: what the page is for, the guide and kit downloads, and the table of contents. */
+import RoadArrow from "../ornaments/RoadArrow.astro";
+import StreetPerspective from "../ornaments/StreetPerspective.astro";
+import { LOCALE_META, useTranslations, type Locale } from "../../i18n";
+import { btnGhostDark, btnPrimary, container, eyebrow } from "../landing/styles";
+import { KIT_ZIP, asset, fileMeta, guidePdf } from "./assets";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale).brand;
+const intl = LOCALE_META[locale].intl;
+const pdf = guidePdf(locale);
+// Section ids are identical in every locale.
+const toc = [
+  ["story", t.toc.story],
+  ["logo", t.toc.logo],
+  ["color", t.toc.color],
+  ["typography", t.toc.typography],
+  ["elements", t.toc.elements],
+  ["rules", t.toc.rules],
+  ["contact", t.toc.contact],
+] as const;
+---
+
+<section class="relative overflow-hidden bg-deep text-white">
+  <StreetPerspective vx={0.78} vy={0.1} road={0.04} streetClass="hidden md:inline" class="absolute inset-0 h-full w-full" />
+  <div class:list={[container, "relative pb-20 pt-20 sm:pb-28 sm:pt-28"]}>
+    <p class={eyebrow}>{t.intro.eyebrow}</p>
+    <h1 class="mt-5 max-w-3xl text-[2.75rem] font-bold leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">{t.intro.headline}</h1>
+    <p class="mt-6 max-w-xl text-lg text-deep-soft">{t.intro.sub}</p>
+    <p class="mt-4 max-w-xl text-deep-soft print:hidden">{t.intro.downloads}</p>
+
+    <!-- Downloads: the guide in this locale and the full kit. Hidden when the page itself is printed. -->
+    <div class="mt-10 flex flex-col gap-6 sm:flex-row sm:gap-8 print:hidden">
+      <div>
+        <a href={asset(pdf)} download={pdf} class={btnPrimary}><RoadArrow kind="straight" class="size-5 rotate-180" /> {t.intro.downloadGuide}</a>
+        <p class="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-deep-muted">{fileMeta(pdf, "PDF", intl)}</p>
+      </div>
+      <div>
+        <a href={asset(KIT_ZIP)} download={KIT_ZIP} class={btnGhostDark}><RoadArrow kind="straight" class="size-5 rotate-180 text-apricot" /> {t.intro.downloadKit}</a>
+        <p class="mt-2 font-mono text-[11px] uppercase tracking-[0.14em] text-deep-muted">{fileMeta(KIT_ZIP, "ZIP", intl)}</p>
+      </div>
+    </div>
+    <p class="mt-4 max-w-xl text-sm text-deep-soft print:hidden">{t.intro.kitContents}</p>
+
+    <nav aria-labelledby="brand-toc" class="mt-14 max-w-3xl border-t border-deep-line pt-6">
+      <p id="brand-toc" class="font-mono text-[11px] uppercase tracking-[0.2em] text-deep-muted">{t.toc.label}</p>
+      <ol class="mt-4 grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
+        {toc.map(([id, label], i) => (
+          <li>
+            <a href={`#${id}`} class="group flex items-baseline gap-3 py-1 text-deep-soft transition hover:text-white">
+              <span class="font-mono text-xs text-deep-muted">0{i + 1}</span>
+              <span class="underline decoration-transparent underline-offset-4 transition group-hover:decoration-apricot">{label}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  </div>
+</section>
