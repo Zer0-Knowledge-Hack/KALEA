@@ -10,18 +10,18 @@ const faqs = [
 ];
 ---
 
-<section id="faq" class="border-t border-line">
+<section id="faq" class="border-t border-deep-line">
   <div class="mx-auto max-w-3xl px-4 py-28 sm:px-6">
     <p class={eyebrow}>FAQ</p>
     <h2 class="mt-4 text-4xl font-bold tracking-tight">Frequently asked questions</h2>
-    <div class="mt-10 divide-y divide-line border-y border-line">
+    <div class="mt-10 divide-y divide-deep-line border-y border-deep-line">
       {faqs.map(([q, a], i) => (
         <details name="faq" open={i === 0}>
           <summary class="flex w-full cursor-pointer list-none items-center justify-between py-5 text-left text-lg font-medium">
             {q}
-            <span class="faq-icon text-2xl text-lime" aria-hidden="true">+</span>
+            <span class="faq-icon text-2xl text-apricot" aria-hidden="true">+</span>
           </summary>
-          <p class="pb-5 text-soft">{a}</p>
+          <p class="pb-5 text-deep-soft">{a}</p>
         </details>
       ))}
     </div>
