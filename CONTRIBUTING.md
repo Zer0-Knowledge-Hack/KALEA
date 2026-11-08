@@ -46,6 +46,7 @@ The web runs on port 3000 because the API only accepts browser requests from `WE
 | `contracts` | Soroban escrow (not implemented yet) | — |
 | `docs` | Business model, architecture, order lifecycle | Review |
 | `legacy` | Frozen consumer prototype, reference only | Do not edit |
+| `.github/workflows` | CI checks (`ci.yml`) and secret detection (`secrets.yml`) | Actions |
 
 ## Working on code
 
@@ -71,6 +72,16 @@ Mention the red step in the PR. Docs-only changes have no test step; check headi
 - **Integrator keys never reach the browser.** The web only calls the public demo endpoints (`/v1/demo/*`) and the merchant endpoints.
 - **Order status changes go through `canTransition`** in `packages/shared`. Do not hardcode transitions in the API or web.
 
+## Security rules
+
+The repo is **public**. Anything you push can be seen and copied.
+
+- **Never commit secrets:** Stellar secret seeds (`S…`), API keys, JWT secrets, passwords, or `.env` files.
+- Local secrets live in git-ignored `.env` files (`apps/api/.env`, `apps/web/.env`). Use the `.env.example` files as templates.
+- Read keys from environment variables and document every new key in the respective `.env.example`.
+- CI runs automated secret detection with Gitleaks (`.github/workflows/secrets.yml`) on every pull request and push to `main`, including Stellar secret seed patterns (`S[A-Z2-7]{55}`).
+- If you leak a secret, notify the team right away and rotate it immediately. Deleting or amending the commit is not enough.
+
 ## Pull requests
 
 ### Size
@@ -92,11 +103,12 @@ main
 
 ### Description
 
-Every PR description includes:
+Open the PR against `main`. The description is pre-filled from `.github/pull_request_template.md`. Every PR description includes:
 
-- **Summary**: what changed and why, plus the linked issue.
-- **Scope**: what is included and what is intentionally left out.
-- **Verification**: each command you ran and its result.
+- **Summary**: what changed and why, plus the linked issue (`Closes #N` or `Refs #N`).
+- **Acceptance criteria**: copy the checklist from the issue and tick what is done.
+- **Verification evidence**: each command you ran and its real output (screenshots, tx hashes if applicable).
+- **Notes for reviewers**: anything out of scope or requiring attention.
 - For chained PRs, **Chain context**: position, base, dependencies and a diagram that marks the current PR.
 
 ### Review and merge

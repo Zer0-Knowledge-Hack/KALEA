@@ -2,10 +2,22 @@ node_modules/
 .astro/
 dist/
 out/
-.env
-.env.local
-*.log
-.DS_Store
 target/
 *.tsbuildinfo
 .atl/
+
+# Sensitive / never-commit files
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.secret
+secrets/
+.stellar/
+.soroban/
+.config/stellar/
+*.log
+.DS_Store
+.vscode/settings.json
