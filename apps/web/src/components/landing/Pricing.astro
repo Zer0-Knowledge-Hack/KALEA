@@ -1,6 +1,7 @@
 ---
 import { DEFAULT_MERCHANT_REWARD_BPS } from "@kalea/shared";
-import { eyebrow } from "./styles";
+import HeroNumber from "../ornaments/HeroNumber.astro";
+import { eyebrowLight } from "./styles";
 
 const rewardPct = DEFAULT_MERCHANT_REWARD_BPS / 100;
 const rows: [string, string, string][] = [
@@ -9,26 +10,33 @@ const rows: [string, string, string][] = [
   ["Merchant", `Earns ${rewardPct}% per order`, "Locked in 7-day cycles"],
   ["Insurance fund", "About 0.1% per order", "Funded from the spread"],
 ];
+// The integrator is the only party that pays Kalea, so its card is the featured one.
+const FEATURED = "Integrator";
 ---
 
-<section id="pricing" class="border-y border-line bg-ink-2/40">
-  <div class="mx-auto grid max-w-6xl gap-12 px-4 py-28 sm:px-6 lg:grid-cols-[1fr_1.3fr]">
+<section id="pricing" class="bg-surface text-ink">
+  <div class="mx-auto grid max-w-6xl gap-12 px-4 py-24 sm:px-6 sm:py-28 lg:grid-cols-[1fr_1.3fr]">
     <div>
-      <p class={eyebrow}>Pricing</p>
+      <p class={eyebrowLight}>Pricing</p>
       <h2 class="mt-4 text-4xl font-bold tracking-tight">Only integrators pay Kalea.</h2>
-      <p class="mt-5 text-soft">Prices are set per country and side over a market reference rate. The spread funds the merchant reward and the insurance fund. You can add your own markup on top.</p>
+      <p class="mt-5 text-ink/75">Prices are set per country and side over a market reference rate. The spread funds the merchant reward and the insurance fund. You can add your own markup on top.</p>
       <div class="mt-10 grid grid-cols-2 gap-6">
-        <div><p class="text-5xl font-bold text-lime"><span data-count={rewardPct} data-decimals="1" data-suffix="%">{rewardPct.toFixed(1)}%</span></p><p class="mt-1 text-sm text-soft">merchant reward per order</p></div>
-        <div><p class="text-5xl font-bold text-coral"><span data-count="7">7</span></p><p class="mt-1 text-sm text-soft">day reward lock cycle</p></div>
+        <HeroNumber label="merchant reward per order"><span data-count={rewardPct} data-decimals="1" data-suffix="%">{rewardPct.toFixed(1)}%</span></HeroNumber>
+        <HeroNumber label="day reward lock cycle"><span data-count="7">7</span></HeroNumber>
       </div>
     </div>
-    <div class="overflow-hidden rounded-3xl border border-line">
-      <div class="grid grid-cols-3 gap-2 bg-ink-3 px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-mute sm:px-5"><span>Who</span><span>What</span><span class="text-lime">How</span></div>
-      {rows.map(([l, a, b], i) => (
-        <div data-reveal style={`--from:translateY(10px);--delay:${0.1 * i}s`} class="grid grid-cols-3 items-center gap-2 border-t border-line px-4 py-4 text-xs sm:px-5 sm:text-sm">
-          <span class="text-soft">{l}</span><span class="font-semibold">{a}</span><span class="text-soft">{b}</span>
-        </div>
-      ))}
+    <div class="grid gap-4 sm:grid-cols-2">
+      {rows.map(([l, a, b], i) => {
+        const featured = l === FEATURED;
+        return (
+          <div data-reveal style={`--from:translateY(10px);--delay:${0.1 * i}s`} class:list={["cut-tr p-6", featured ? "bg-ocean text-white" : "bg-white text-ink"]}>
+            <p class:list={["font-mono text-[11px] uppercase tracking-[0.14em]", featured ? "text-ocean-100" : "text-muted"]}>{l}</p>
+            <p class="mt-4 text-lg font-semibold">{a}</p>
+            <span aria-hidden="true" class:list={["mt-3 block h-[3px] w-10 rounded-full", featured ? "bg-apricot" : "bg-line"]}></span>
+            <p class:list={["mt-3 text-sm", featured ? "text-ocean-100" : "text-ink/75"]}>{b}</p>
+          </div>
+        );
+      })}
     </div>
   </div>
 </section>

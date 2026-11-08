@@ -3,8 +3,14 @@ const ticks = ["One API", "8 LATAM countries", "Pix · SPEI · Yape · QR Simple
 const row = [...ticks, ...ticks];
 ---
 
-<div class="overflow-hidden border-y border-line bg-ink-2 py-3">
-  <div class="marquee flex w-max gap-10 whitespace-nowrap font-mono text-xs uppercase tracking-[0.16em] text-soft">
-    {row.map((t, i) => <span class="flex items-center gap-10" aria-hidden={i >= ticks.length ? "true" : undefined}>{t}<span class="text-lime">✦</span></span>)}
+<div class="overflow-hidden border-y border-deep-line bg-deep-2 py-3">
+  <div class="marquee flex w-max gap-10 whitespace-nowrap font-mono text-xs uppercase tracking-[0.16em] text-deep-soft">
+    {row.map((t, i) => (
+      <span class="flex items-center gap-10" aria-hidden={i >= ticks.length ? "true" : undefined}>
+        {t}
+        <!-- Separator: the street, a small Apricot triangle. -->
+        <svg viewBox="0 0 10 10" class="size-2.5 fill-apricot" aria-hidden="true" focusable="false"><polygon points="5,0 10,10 0,10" /></svg>
+      </span>
+    ))}
   </div>
 </div>
