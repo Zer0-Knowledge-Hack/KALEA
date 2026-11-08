@@ -16,7 +16,7 @@ Pull requests that skip step 1 may be closed without review, even if the code is
 
 | Rule | Why |
 | --- | --- |
-| English for all artifacts: code, comments, UI copy, docs, commits and PRs | Kalea targets all of LATAM and international integrators |
+| English for code, comments, docs, commits and PRs. Product UI copy is written in English as the source and localized to neutral Latin American Spanish and Brazilian Portuguese through `apps/web/src/i18n/` (no hard-coded user-facing strings in components) | Kalea targets all of LATAM and international integrators |
 | Kalea is B2B infrastructure. Never frame it as a consumer exchange, a wallet or a P2P marketplace | See [docs/business-model.md](docs/business-model.md) |
 | Kalea never holds local fiat. Never claim "no custody" or that anyone is "not responsible" | Legal wording must stay accurate. The escrow contract holds USDC |
 | No funding-application or grant material in the repository | The project stands on its own |

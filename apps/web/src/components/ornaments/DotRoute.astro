@@ -1,0 +1,23 @@
+---
+/** Dot-grid route: a request travelling through a grid, with stops at each turn. Decorative only. */
+interface Props {
+  tone?: "light" | "dark";
+  class?: string;
+}
+
+const { tone = "dark", class: className = "" } = Astro.props;
+const S = 28;
+const COLS = 21;
+const ROWS = 12;
+const dot = tone === "dark" ? "fill-white/15" : "fill-line";
+const stop = tone === "dark" ? "fill-white" : "fill-ocean";
+const route = [[1, 10], [5, 10], [5, 6], [11, 6], [11, 3], [20, 3]];
+const at = (n: number) => n * S + S / 2;
+---
+
+<svg viewBox={`0 0 ${COLS * S} ${ROWS * S}`} class:list={["pointer-events-none", className]} aria-hidden="true" focusable="false">
+  {Array.from({ length: ROWS * COLS }, (_, i) => <circle cx={at(i % COLS)} cy={at(Math.floor(i / COLS))} r="2" class={dot} />)}
+  <polyline points={route.map(([c, r]) => `${at(c)},${at(r)}`).join(" ")} fill="none" class="stroke-apricot" stroke-width="3" stroke-linejoin="round" />
+  {route.slice(1, -1).map(([c, r]) => <circle cx={at(c)} cy={at(r)} r="5" class={stop} />)}
+  <polygon points={`${at(20) + 10},${at(3)} ${at(20) - 4},${at(3) - 8} ${at(20) - 4},${at(3) + 8}`} class="fill-apricot" />
+</svg>

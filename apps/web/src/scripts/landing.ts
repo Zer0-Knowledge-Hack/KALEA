@@ -1,6 +1,6 @@
 /**
  * Small progressive enhancements for the static landing (no framework): header hide-on-scroll and
- * mobile menu, reveal-on-scroll, count-up numbers, the merchant card spotlight and the magnetic CTA.
+ * mobile menu, reveal-on-scroll, count-up numbers, FAQ tabs and the magnetic CTA.
  */
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -26,6 +26,19 @@ if (header && toggle && menu) {
   toggle.addEventListener("click", () => setOpen(!open));
   menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => setOpen(false)));
 }
+
+// Language switcher: keep the reader's place. Anchors are identical across locales, so the link
+// gets the id of the section currently in view (the last one whose top passed 35% of the viewport).
+document.querySelectorAll<HTMLAnchorElement>("[data-locale-link]").forEach((link) => {
+  link.addEventListener("click", () => {
+    const inView = [...document.querySelectorAll<HTMLElement>("main section[id]")]
+      .filter((s) => s.getBoundingClientRect().top <= innerHeight * 0.35)
+      .pop();
+    const url = new URL(link.href);
+    url.hash = inView ? inView.id : "";
+    link.href = url.href;
+  });
+});
 
 // Count-up numbers, eased over 1.6 s once visible.
 function countUp(el: HTMLElement) {
@@ -57,13 +70,39 @@ const observer = new IntersectionObserver(
 );
 document.querySelectorAll<HTMLElement>("[data-reveal], [data-count]").forEach((el) => observer.observe(el));
 
-// Merchant cards: a cursor-following spotlight through CSS variables.
-document.querySelectorAll<HTMLElement>("[data-spotlight]").forEach((card) => {
-  card.addEventListener("pointermove", (e) => {
-    const r = card.getBoundingClientRect();
-    card.style.setProperty("--x", `${e.clientX - r.left}px`);
-    card.style.setProperty("--y", `${e.clientY - r.top}px`);
+// FAQ tabs (WAI-ARIA tabs pattern). Without JavaScript every group stays visible with its heading.
+document.querySelectorAll<HTMLElement>("[data-tabs]").forEach((root) => {
+  const list = root.querySelector<HTMLElement>("[data-tablist]");
+  const tabs = [...root.querySelectorAll<HTMLButtonElement>("[data-tablist] button")];
+  const panels = [...root.querySelectorAll<HTMLElement>("[data-tabpanel]")];
+  if (!list || !tabs.length || tabs.length !== panels.length) return;
+  list.hidden = false;
+  list.setAttribute("role", "tablist");
+  root.classList.add("tabs-on");
+  const select = (index: number, focus = false) => {
+    tabs.forEach((tab, i) => {
+      const on = i === index;
+      tab.setAttribute("aria-selected", String(on));
+      tab.tabIndex = on ? 0 : -1;
+      panels[i].hidden = !on;
+    });
+    if (focus) tabs[index].focus();
+  };
+  tabs.forEach((tab, i) => {
+    tab.setAttribute("role", "tab");
+    panels[i].setAttribute("role", "tabpanel");
+    panels[i].setAttribute("aria-labelledby", tab.id);
+    panels[i].tabIndex = 0;
+    tab.addEventListener("click", () => select(i));
+    tab.addEventListener("keydown", (e) => {
+      const last = tabs.length - 1;
+      const next = (<Record<string, number>>{ ArrowRight: i === last ? 0 : i + 1, ArrowLeft: i === 0 ? last : i - 1, Home: 0, End: last })[e.key];
+      if (next === undefined) return;
+      e.preventDefault();
+      select(next, true);
+    });
   });
+  select(0);
 });
 
 // CTA: the button leans toward the cursor.

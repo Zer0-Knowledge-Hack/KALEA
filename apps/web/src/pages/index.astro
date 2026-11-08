@@ -1,34 +1,6 @@
 ---
-import Base from "../layouts/Base.astro";
-import Nav from "../components/landing/Nav.astro";
-import Hero from "../components/landing/Hero.astro";
-import Ticker from "../components/landing/Ticker.astro";
-import HowItWorks from "../components/landing/HowItWorks.astro";
-import QuoteSection from "../components/landing/QuoteSection.astro";
-import Coverage from "../components/landing/Coverage.astro";
-import Pricing from "../components/landing/Pricing.astro";
-import Merchants from "../components/landing/Merchants.astro";
-import Faq from "../components/landing/Faq.astro";
-import Cta from "../components/landing/Cta.astro";
-import Footer from "../components/landing/Footer.astro";
+import Landing from "../components/landing/Landing.astro";
+import { getLocale } from "../i18n";
 ---
 
-<Base>
-  <Nav />
-  <main>
-    <Hero />
-    <Ticker />
-    <HowItWorks />
-    <QuoteSection />
-    <Coverage />
-    <Pricing />
-    <Merchants />
-    <Faq />
-    <Cta />
-  </main>
-  <Footer />
-</Base>
-
-<script>
-  import "../scripts/landing";
-</script>
+<Landing locale={getLocale(Astro.currentLocale)} />

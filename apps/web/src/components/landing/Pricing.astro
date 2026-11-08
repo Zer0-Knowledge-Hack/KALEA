@@ -1,42 +1,38 @@
 ---
-import { DEFAULT_MERCHANT_REWARD_BPS } from "@kalea/shared";
+import { QUOTE_TTL_MS } from "@kalea/shared";
+import { DEMO_COUNTRIES } from "../../lib/catalog";
 import HeroNumber from "../ornaments/HeroNumber.astro";
-import { eyebrowLight } from "./styles";
+import { useTranslations, type Locale } from "../../i18n";
+import { container, eyebrowLight, h2, sectionY } from "./styles";
 
-const rewardPct = DEFAULT_MERCHANT_REWARD_BPS / 100;
-const rows: [string, string, string][] = [
-  ["End user", "One all-in price", "No Kalea fee line"],
-  ["Integrator", "Per-transaction fee", "Debited from a prefunded USDC balance"],
-  ["Merchant", `Earns ${rewardPct}% per order`, "Locked in 7-day cycles"],
-  ["Insurance fund", "About 0.1% per order", "Funded from the spread"],
-];
-// The integrator is the only party that pays Kalea, so its card is the featured one.
-const FEATURED = "Integrator";
+interface Props {
+  locale: Locale;
+}
+
+const copy = useTranslations(Astro.props.locale).pricing;
+const quoteMinutes = QUOTE_TTL_MS / 60_000;
 ---
 
-<section id="pricing" class="bg-surface text-ink">
-  <div class="mx-auto grid max-w-6xl gap-12 px-4 py-24 sm:px-6 sm:py-28 lg:grid-cols-[1fr_1.3fr]">
-    <div>
-      <p class={eyebrowLight}>Pricing</p>
-      <h2 class="mt-4 text-4xl font-bold tracking-tight">Only integrators pay Kalea.</h2>
-      <p class="mt-5 text-ink/75">Prices are set per country and side over a market reference rate. The spread funds the merchant reward and the insurance fund. You can add your own markup on top.</p>
-      <div class="mt-10 grid grid-cols-2 gap-6">
-        <HeroNumber label="merchant reward per order"><span data-count={rewardPct} data-decimals="1" data-suffix="%">{rewardPct.toFixed(1)}%</span></HeroNumber>
-        <HeroNumber label="day reward lock cycle"><span data-count="7">7</span></HeroNumber>
-      </div>
+<section id="pricing" class="bg-white text-ink">
+  <div class:list={[container, sectionY, "grid gap-16 lg:grid-cols-12"]}>
+    <div class="lg:col-span-5">
+      <p class={eyebrowLight}>{copy.eyebrow}</p>
+      <h2 class:list={[h2, "mt-5"]}>{copy.headline}</h2>
+      <p class="mt-6 max-w-sm text-lg text-ink/75">{copy.sub}</p>
     </div>
-    <div class="grid gap-4 sm:grid-cols-2">
-      {rows.map(([l, a, b], i) => {
-        const featured = l === FEATURED;
-        return (
-          <div data-reveal style={`--from:translateY(10px);--delay:${0.1 * i}s`} class:list={["cut-tr p-6", featured ? "bg-ocean text-white" : "bg-white text-ink"]}>
-            <p class:list={["font-mono text-[11px] uppercase tracking-[0.14em]", featured ? "text-ocean-100" : "text-muted"]}>{l}</p>
-            <p class="mt-4 text-lg font-semibold">{a}</p>
-            <span aria-hidden="true" class:list={["mt-3 block h-[3px] w-10 rounded-full", featured ? "bg-apricot" : "bg-line"]}></span>
-            <p class:list={["mt-3 text-sm", featured ? "text-ocean-100" : "text-ink/75"]}>{b}</p>
+    <div class="lg:col-span-6 lg:col-start-7">
+      <dl class="border-b border-line">
+        {copy.terms.map(({ term: k, detail: v }) => (
+          <div class="grid gap-1 border-t border-line py-5 sm:grid-cols-[9rem_1fr] sm:gap-6">
+            <dt class="font-mono text-[11px] uppercase tracking-[0.16em] text-ocean sm:pt-1">{k}</dt>
+            <dd class="text-lg">{v}</dd>
           </div>
-        );
-      })}
+        ))}
+      </dl>
+      <div class="mt-14 grid grid-cols-2 gap-8">
+        <HeroNumber label={copy.quoteValidity}><span data-count={quoteMinutes} data-suffix={` ${copy.minutes}`}>{quoteMinutes} {copy.minutes}</span></HeroNumber>
+        <HeroNumber label={copy.corridors}><span data-count={DEMO_COUNTRIES.length}>{DEMO_COUNTRIES.length}</span></HeroNumber>
+      </div>
     </div>
   </div>
 </section>

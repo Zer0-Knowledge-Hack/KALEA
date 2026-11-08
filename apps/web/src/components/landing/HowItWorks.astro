@@ -1,39 +1,59 @@
 ---
-import Lane from "../ornaments/Lane.astro";
-import StepBadge from "../ornaments/StepBadge.astro";
-import { eyebrowLight } from "./styles";
+import Merge from "../ornaments/Merge.astro";
+import { useTranslations, type Locale } from "../../i18n";
+import { container, eyebrowLight, h2, sectionY } from "./styles";
 
-const steps = [
-  ["Quote", "Your backend requests a quote for a country, side (on-ramp or off-ramp), rail and amount. Your end user sees one all-in price."],
-  ["Match and lock", "You create the order and Kalea matches it with a merchant. The USDC side is locked in a per-order Soroban escrow with fixed amounts before any fiat moves."],
-  ["Fiat moves locally", "The end user and the merchant exchange local fiat over Pix, SPEI, Yape, QR Simple or a bank transfer, under the merchant's own accounts. Kalea never holds local fiat."],
-  ["Release", "Once the fiat recipient confirms, the escrow releases USDC, credits the merchant reward and the insurance fund, and Kalea debits your fee from your prefunded balance."],
-];
-const badges = ["ocean", "outline", "apricot", "deep"] as const;
-// Lanes run Ocean, then Apricot into the last step.
-const lanes = ["ocean", "ocean", "apricot"] as const;
+interface Props {
+  locale: Locale;
+}
+
+const copy = useTranslations(Astro.props.locale).howItWorks;
+const { steps, safety } = copy;
 ---
 
-<section id="how-it-works" class="bg-white text-ink">
-  <div class="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-28">
-    <p class={eyebrowLight}>How it works</p>
-    <h2 class="mt-4 max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">Escrow-first. Fiat stays local. Kalea settles only USDC.</h2>
-    <ol class="mt-14 flex flex-col lg:grid lg:grid-cols-4 lg:gap-12">
-      {steps.map(([t, d], i) => (
-        <li class="relative flex flex-col" data-reveal style={`--delay:${i * 0.08}s`}>
-          <div class="cut-tr h-full bg-surface p-6">
-            <StepBadge n={i + 1} variant={badges[i]} />
-            <h3 class="mt-6 text-xl font-semibold">{t}</h3>
-            <p class="mt-2 text-sm leading-relaxed text-ink/75">{d}</p>
-          </div>
-          {lanes[i] && (
-            <>
-              <Lane color={lanes[i]} direction="v" class="mx-auto my-2 lg:hidden" />
-              <Lane color={lanes[i]} direction="h" class="absolute -right-12 top-[34px] hidden lg:block" />
-            </>
-          )}
-        </li>
-      ))}
+<section id="how-it-works" class="bg-surface text-ink">
+  <div class:list={[container, sectionY]}>
+    <p class={eyebrowLight}>{copy.eyebrow}</p>
+    <h2 class:list={[h2, "mt-5 max-w-3xl"]}>{copy.headline}</h2>
+
+    <!-- The route is the layout: a dashed lane with one stop per step, ending in the Apricot release. -->
+    <ol class="relative mt-20 grid gap-12 border-l-2 border-dashed border-ocean pl-8 lg:grid-cols-4 lg:gap-10 lg:border-l-0 lg:border-t-2 lg:pl-0">
+      {steps.map(({ title: t, body: d }, i) => {
+        const last = i === steps.length - 1;
+        return (
+          <li data-reveal style={`--delay:${i * 0.08}s`} class="relative lg:pt-12">
+            {/* Stop on the route: a ring for each step, an Apricot marker for the release. */}
+            <span
+              aria-hidden="true"
+              class:list={[
+                "absolute -left-[41px] top-1 size-4 lg:-top-[9px] lg:left-0",
+                last ? "bg-apricot [clip-path:polygon(50%_0,100%_100%,0_100%)]" : "rounded-full border-[3px] border-ocean bg-surface",
+              ]}
+            ></span>
+            <span class="font-mono text-xs text-muted">0{i + 1}</span>
+            <h3 class="mt-3 text-2xl font-semibold tracking-tight">{t}</h3>
+            <p class="mt-2 max-w-[30ch] text-ink/75">{d}</p>
+          </li>
+        );
+      })}
     </ol>
+
+    <div class="mt-24 grid gap-12 border-t border-line pt-10 lg:grid-cols-12 lg:items-center">
+      <figure class="relative my-6 lg:col-span-5">
+        <Merge class="block w-full max-w-md" />
+        <figcaption class="pointer-events-none absolute inset-0 max-w-md font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
+          <span class="absolute left-0 top-0 -translate-y-full pb-1">{copy.mergeFiat}</span>
+          <span class="absolute bottom-0 left-0 translate-y-full pt-1">{copy.mergeCoin}</span>
+          <span class="absolute right-0 top-1/2 -translate-y-[180%] text-ocean">{copy.mergeOrder}</span>
+        </figcaption>
+      </figure>
+      <div class="lg:col-span-6 lg:col-start-7">
+        <p class={eyebrowLight}>{copy.safetyLabel}</p>
+        <ul class="mt-4 divide-y divide-line border-y border-line">
+          {safety.map((s) => <li class="py-3.5 text-lg">{s}</li>)}
+        </ul>
+        <p class="mt-5 text-sm text-muted">{copy.note}</p>
+      </div>
+    </div>
   </div>
 </section>

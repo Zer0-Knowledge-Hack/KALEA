@@ -1,0 +1,25 @@
+---
+/** Crown pattern: the mark tiled as a quiet texture on Deep. Never behind text. Use once per page (fixed pattern id). */
+interface Props {
+  class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+const TILE = 48;
+const scale = (TILE * 0.6) / 48;
+---
+
+<svg class:list={["pointer-events-none block", className]} aria-hidden="true" focusable="false">
+  <defs>
+    <pattern id="kalea-crown-pattern" width={TILE * 2} height={TILE * 2} patternUnits="userSpaceOnUse">
+      {[[0, 0], [TILE, TILE]].map(([x, y]) => (
+        <g transform={`translate(${x + TILE * 0.2},${y + TILE * 0.2}) scale(${scale})`}>
+          <polygon points="5,42 5,11 14,20 18.8,20 14.5,42" fill="#FFFFFF" fill-opacity="0.1" />
+          <polygon points="43,42 43,11 34,20 29.2,20 33.5,42" fill="#FFFFFF" fill-opacity="0.1" />
+          <polygon points="24,6 31,42 17,42" fill="#EE9E4F" fill-opacity="0.4" />
+        </g>
+      ))}
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#kalea-crown-pattern)" />
+</svg>

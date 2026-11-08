@@ -1,0 +1,86 @@
+---
+import CrownDivider from "../ornaments/CrownDivider.astro";
+import DotRoute from "../ornaments/DotRoute.astro";
+import { useTranslations, type Locale } from "../../i18n";
+import { CONTACT_URL, DOCS_URL, btnGhostDark, btnPrimary, container, eyebrow, h2, sectionY } from "./styles";
+
+interface Props {
+  locale: Locale;
+}
+
+const copy = useTranslations(Astro.props.locale).developers;
+
+// Real contract of POST /v1/quotes (apps/api/src/app.ts: quoteSchema and the /quotes route).
+// The response was computed with the shared demo pricing for Brazil and the demo integrator fee (30 bps).
+const request = { country: "BR", side: "buy", rail: "pix", amount: 1000, amountIn: "fiat" };
+const response = {
+  quote: {
+    side: "buy",
+    country: "BR",
+    fiatCurrency: "BRL",
+    rail: "pix",
+    rate: 5.508,
+    fiatAmount: 1000,
+    usdcAmount: 181.5541031,
+    expiresAt: "2026-11-08T15:05:00.000Z",
+    kind: "transfer",
+    integratorFeeUsdc: 0.5446623,
+  },
+};
+
+/** Minimal JSON highlighter for static, trusted sample data: keys, strings and numbers. */
+const highlight = (value: unknown) =>
+  JSON.stringify(value, null, 2)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/("[^"]*")(\s*:)?|(-?\d+(?:\.\d+)?)/g, (_m, str: string | undefined, colon: string | undefined, num: string | undefined) => {
+      if (num) return `<span class="text-white">${num}</span>`;
+      return colon ? `<span class="text-ocean-100">${str}</span>${colon}` : `<span class="text-apricot">${str}</span>`;
+    });
+
+// Code, API paths and JSON stay untranslated.
+const features = [...copy.features.map((text) => ({ text, next: false })), ...copy.featuresNext.map((text) => ({ text, next: true }))];
+---
+
+<section id="developers" class="bg-deep">
+  <div class:list={[container, sectionY]}>
+    <CrownDivider class="text-deep-line" />
+    <p class:list={[eyebrow, "mt-16"]}>{copy.eyebrow}</p>
+    <h2 class:list={[h2, "mt-5"]}>{copy.headline.main} <span class="text-deep-soft">{copy.headline.soft}</span></h2>
+    <div class="mt-14 grid gap-14 lg:grid-cols-12">
+      <div class="min-w-0 lg:col-span-5">
+        <p class="max-w-md text-lg text-deep-soft">{copy.sub}</p>
+        <ul class="mt-10 border-b border-deep-line">
+          {features.map((f) => (
+            <li class="border-t border-deep-line py-3 text-white">
+              {f.text}{f.next && <span class="text-deep-muted"> {copy.next}</span>}
+            </li>
+          ))}
+        </ul>
+        <div class="mt-10 flex flex-wrap items-center gap-3">
+          <a href={DOCS_URL} class={btnPrimary}>{copy.docs}</a>
+          <a href={CONTACT_URL} class={btnGhostDark}>{copy.key}</a>
+        </div>
+        <!-- Dot-grid route in the margin: a request finding its way through the API. -->
+        <DotRoute class="mt-16 hidden w-full max-w-sm lg:block" />
+      </div>
+
+      <div data-reveal style="--from:translateY(24px)" class="min-w-0 self-start border border-deep-line font-mono text-[13px] leading-relaxed lg:col-span-7">
+        <div class="flex items-center gap-3 border-b border-deep-line px-5 py-3.5 text-xs">
+          <span class="font-medium text-apricot">POST</span>
+          <span class="text-white">/v1/quotes</span>
+        </div>
+        <pre class="overflow-x-auto px-5 py-4 text-deep-soft"><code><span class="text-deep-muted">X-API-Key: &lt;your_api_key&gt;
+Content-Type: application/json</span>
+
+<Fragment set:html={highlight(request)} /></code></pre>
+        <div class="flex items-center gap-3 border-y border-deep-line px-5 py-3.5 text-xs">
+          <span class="text-white">200</span>
+          <span class="text-deep-muted">{copy.response}</span>
+        </div>
+        <pre class="overflow-x-auto px-5 py-4 text-deep-soft"><code><Fragment set:html={highlight(response)} /></code></pre>
+        <p class="border-t border-deep-line px-5 py-3 text-[11px] uppercase tracking-[0.14em] text-deep-muted">{copy.caption}</p>
+      </div>
+    </div>
+  </div>
+</section>

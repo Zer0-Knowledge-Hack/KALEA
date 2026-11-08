@@ -1,31 +1,56 @@
 ---
-import { eyebrowLight } from "./styles";
+import CrownDivider from "../ornaments/CrownDivider.astro";
+import { useTranslations, type Locale } from "../../i18n";
+import { container, eyebrowLight, h2, sectionY } from "./styles";
 
-const faqs = [
-  ["Who is Kalea for?", "Businesses that want local on-ramps, off-ramps or QR payments in their product: wallets, payment collection, SaaS platforms and others. Kalea does not serve consumers directly."],
-  ["Does Kalea hold my users' money?", "Kalea never holds local fiat; it moves between the end user and the merchant. USDC is held by a per-order Soroban escrow contract under its rules until the order is released, refunded or resolved."],
-  ["How does Kalea charge?", "Only integrators pay Kalea: a per-transaction fee debited from a prefunded USDC balance. End users see one all-in price, and merchants never pay Kalea."],
-  ["What happens if a party does not deliver?", "The escrow does not release without confirmation. Timeouts refund the locked USDC, and disputes freeze the escrow until they are resolved with the recorded evidence."],
-  ["Can I accept QR payments?", "Yes. A QR payment is an off-ramp variant: the end user locks USDC and a merchant pays the third-party QR in local currency."],
+interface Props {
+  locale: Locale;
+}
+
+const copy = useTranslations(Astro.props.locale).faq;
+// Integrator-facing only. Liquidity partners get their own surface later. Group ids are stable across locales.
+const groups = [
+  { id: "businesses", title: copy.businesses.title, faqs: copy.businesses.items },
+  { id: "developers", title: copy.developers.title, faqs: copy.developers.items },
 ];
 ---
 
-<section id="faq" class="border-t border-line bg-white text-ink">
-  <div class="mx-auto max-w-3xl px-4 py-24 sm:px-6 sm:py-28">
-    <p class={eyebrowLight}>FAQ</p>
-    <h2 class="mt-4 text-4xl font-bold tracking-tight">Frequently asked questions</h2>
-    <div class="mt-10 divide-y divide-line border-y border-line">
-      {faqs.map(([q, a], i) => (
-        <details name="faq" open={i === 0}>
-          <summary class="flex w-full cursor-pointer list-none items-center justify-between gap-4 py-5 text-left text-lg font-medium">
-            {q}
-            <svg viewBox="0 0 16 16" class="faq-icon size-4 shrink-0 fill-none stroke-ocean" aria-hidden="true" focusable="false">
-              <path d="M3.5 6 8 10.5 12.5 6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </summary>
-          <p class="pb-5 text-ink/75">{a}</p>
-        </details>
-      ))}
+<section id="faq" class="bg-surface text-ink">
+  <div class:list={[container, sectionY]}>
+    <CrownDivider class="text-line" />
+    <div class="mt-16 grid gap-12 lg:grid-cols-12">
+      <div class="lg:col-span-4">
+        <p class={eyebrowLight}>{copy.eyebrow}</p>
+        <h2 class:list={[h2, "mt-5"]}>{copy.headline}</h2>
+      </div>
+      <!-- Without JavaScript every group is shown with its heading; landing.ts turns the groups into tabs. -->
+      <div data-tabs class="min-w-0 lg:col-span-8">
+        <div data-tablist aria-label={copy.topics} hidden class="flex gap-8 border-b border-line">
+          {groups.map((g) => (
+            <button type="button" id={`faq-tab-${g.id}`} aria-controls={`faq-${g.id}`} class="faq-tab -mb-px border-b-2 border-transparent pb-3 text-[15px] font-semibold text-ink/70 transition-colors hover:text-ink aria-selected:border-ocean aria-selected:text-ink">
+              {g.title}
+            </button>
+          ))}
+        </div>
+        {groups.map((g, gi) => (
+          <div id={`faq-${g.id}`} data-tabpanel class:list={[{ "mt-12": gi > 0 }, "[.tabs-on_&]:mt-0"]}>
+            <h3 data-tabheading class="pb-3 font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-ocean">{g.title}</h3>
+            <div class="divide-y divide-line border-y border-line [.tabs-on_&]:border-t-0">
+              {g.faqs.map(({ q, a }, i) => (
+                <details name={`faq-${g.id}`} open={i === 0}>
+                  <summary class="flex w-full cursor-pointer list-none items-center justify-between gap-6 py-5 text-left text-lg font-medium">
+                    {q}
+                    <svg viewBox="0 0 16 16" class="faq-icon size-4 shrink-0 fill-none stroke-ocean" aria-hidden="true" focusable="false">
+                      <path d="M3.5 6 8 10.5 12.5 6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </summary>
+                  <p class="max-w-2xl pb-6 text-ink/75">{a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   </div>
 </section>

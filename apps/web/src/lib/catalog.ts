@@ -1,6 +1,7 @@
-import { COUNTRY_CATALOG, DEMO_CORRIDOR_PRICING, DEMO_INTEGRATORS, computeQuote, type Country, type Rail } from "@kalea/shared";
+import { COUNTRIES, COUNTRY_CATALOG, DEMO_CORRIDOR_PRICING, DEMO_INTEGRATORS, computeQuote, type Country, type Rail } from "@kalea/shared";
 import type { DemoQuote, QuoteRequest } from "./api";
 
+/** English display names (the i18n source and /app). Localized names live in src/i18n. */
 export const COUNTRY_NAMES: Record<Country, string> = {
   BO: "Bolivia",
   AR: "Argentina",
@@ -25,6 +26,15 @@ export const RAIL_NAMES: Record<Rail, string> = {
 /** Countries with demo pricing in the shared catalog (the API serves the same set by default). */
 export const DEMO_COUNTRIES: Country[] = DEMO_CORRIDOR_PRICING.map((p) => p.country);
 
+/** Countries without demo pricing yet, in catalog order. */
+export const PLANNED_COUNTRIES: Country[] = COUNTRIES.filter((c) => !DEMO_COUNTRIES.includes(c));
+
+/** Every rail in the catalog, with whether a demo corridor already uses it. */
+export const RAILS: { rail: Rail; live: boolean }[] = [...new Set(COUNTRIES.flatMap((c) => COUNTRY_CATALOG[c].rails))].map((rail) => ({
+  rail,
+  live: DEMO_COUNTRIES.some((c) => (COUNTRY_CATALOG[c].rails as readonly Rail[]).includes(rail)),
+}));
+
 export interface Corridor {
   country: Country;
   currency: string;
@@ -35,11 +45,12 @@ export interface Corridor {
 export const fallbackCorridors = (): Corridor[] =>
   DEMO_COUNTRIES.map((country) => ({ country, ...COUNTRY_CATALOG[country] }));
 
-export const formatNumber = (n: number, decimals = 2) =>
-  new Intl.NumberFormat("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n);
+/** `locale` is an Intl tag (en-US, es-419, pt-BR); the landing passes the page locale, /app keeps en-US. */
+export const formatNumber = (n: number, decimals = 2, locale = "en-US") =>
+  new Intl.NumberFormat(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n);
 
-export const formatFiat = (n: number, currency: string, decimals = 2) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n);
+export const formatFiat = (n: number, currency: string, decimals = 2, locale = "en-US") =>
+  new Intl.NumberFormat(locale, { style: "currency", currency, minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(n);
 
 export const formatDate = (iso: string) =>
   new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso));
