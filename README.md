@@ -6,7 +6,7 @@ Kalea lets any business add local-currency on-ramps and off-ramps to its product
 
 Kalea is not a consumer exchange, a wallet, or a P2P marketplace. Its customers are the businesses that integrate it.
 
-> **Status:** early stage. The code in this repository still reflects an earlier consumer-exchange prototype and is being restructured on the `feat/b2b-latam-ramp` branch. See [Current status](#current-status).
+> **Status:** early stage. The API and escrow lifecycle run as an in-memory simulation on testnet; the Soroban escrow is not implemented yet. See [Current status](#current-status).
 
 ## Who does what
 
@@ -77,15 +77,22 @@ pnpm dev          # web on :3000, api on :8787
 
 The API needs `SERVER_SIGNING_SECRET` (a Stellar secret key used to sign SEP-10 challenges) and `JWT_SECRET` in `apps/api/.env`. Use testnet keys only.
 
+Demo credentials use comma-separated `<id>:<value>` pairs:
+
+- API `INTEGRATOR_API_KEYS`: integrator id and raw API key (at least 24 characters), e.g. `int_wallet:<key>,int_payments:<key>`. Keys are hashed at startup.
+- API `MERCHANT_ACCOUNTS`: merchant id and the Stellar public key it signs SEP-10 challenges with, e.g. `mer_andes:G...,mer_rio:G...,mer_azteca:G...`.
+- Web `NEXT_PUBLIC_API_URL`: API base URL (default `http://localhost:8787`).
+- Web `KALEA_DEMO_INTEGRATOR_KEY`: server-only key used by the landing quote demo (`/api/demo-quote`). It never reaches the browser. Without it the demo falls back to local demo pricing.
+
 CI (`.github/workflows/ci.yml`) runs `pnpm typecheck`, `pnpm test` and the web build on every pull request.
 
 ## Current status
 
 | Area | In code today | Planned |
 | --- | --- | --- |
-| Domain model | Consumer-era types and demo data | Countries, fiat currencies, rails, integrators, LPs, one order lifecycle |
-| API | Quotes, orders and SEP-10 login returning a JWT | `/v1` integrator-scoped API with API keys, prefunded balance and fee debit; SEP-10 kept for merchants |
-| Web | Landing and app prototype | B2B landing, country picker with all-in price, integrator and merchant dashboards |
+| Domain model | Countries, fiat currencies, rails, integrators, merchants, all-in quotes, QR payments, one order lifecycle (demo data) | Persistent storage |
+| API | `/v1` integrator API (hashed API keys, corridors, quotes, orders, prefunded balance and fee debit), merchant SEP-10 login, simulated escrow lifecycle with a 7-day reward lock | Real Soroban escrow, webhooks, integrator SDK |
+| Web | English B2B landing, corridor quote demo, merchant dashboard (orders and rewards) | Integrator dashboard |
 | Escrow | Not implemented | Soroban per-order escrow and merchant reward vault ([contracts/README.md](contracts/README.md)) |
 | Identity | Not implemented | KYC, liveness and social-proof providers behind ports |
 | Regulation | Out of MVP scope | Licensing requirements will be assessed per country |

@@ -10,7 +10,7 @@ import {
   roundTo,
   selectMerchant,
   type Integrator,
-  type RampOrder,
+  type Order,
   type Rail,
 } from "@kalea/shared";
 import { env } from "./env.js";
@@ -70,7 +70,7 @@ export function createApp(overrides: Partial<AppConfig> = {}) {
     return computeQuote({ ...input, pricing, integrator, rail: input.rail as Rail, now: config.now() });
   }
 
-  function findOrder(id: string, actor: Actor): RampOrder {
+  function findOrder(id: string, actor: Actor): Order {
     const order = store.orders.get(id);
     const owned = actor.kind === "integrator" ? order?.integratorId === actor.integrator.id : order?.merchantId === actor.merchant.id;
     if (!order || !owned) throw new ApiError(404, "order_not_found", "Order not found");
@@ -128,7 +128,7 @@ export function createApp(overrides: Partial<AppConfig> = {}) {
       }
 
       const at = new Date(config.now()).toISOString();
-      const order: RampOrder = {
+      const order: Order = {
         id: `ord_${crypto.randomUUID()}`,
         integratorId: integrator.id,
         endUserRef,
