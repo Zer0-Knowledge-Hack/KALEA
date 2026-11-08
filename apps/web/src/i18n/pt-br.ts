@@ -63,7 +63,7 @@ export const ptBr: Dictionary = {
     mergeFiat: "Fiat · trilhos locais",
     mergeCoin: "Stablecoin · on-chain",
     mergeOrder: "Uma ordem",
-    note: "Hoje em testnet: o ciclo de vida do escrow é simulado enquanto o contrato on-chain é construído.",
+    note: "Hoje em testnet: o contrato de escrow na Soroban já está implantado, e a API ainda simula o ciclo de vida do pedido enquanto é integrada.",
   },
   quote: {
     eyebrow: "Cotação ao vivo",

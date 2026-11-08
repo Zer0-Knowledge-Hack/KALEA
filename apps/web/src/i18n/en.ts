@@ -66,7 +66,7 @@ export const en = {
     mergeFiat: "Fiat · local rails",
     mergeCoin: "Stablecoin · on-chain",
     mergeOrder: "One order",
-    note: "Testnet today: the escrow lifecycle is simulated while the on-chain contract is built.",
+    note: "Testnet today: the Soroban escrow contract is deployed, and the API still runs the order lifecycle as a simulation while it is wired in.",
   },
   quote: {
     eyebrow: "Live quote",

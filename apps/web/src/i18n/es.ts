@@ -62,7 +62,7 @@ export const es: Dictionary = {
     mergeFiat: "Fiat · rieles locales",
     mergeCoin: "Stablecoin · on-chain",
     mergeOrder: "Una orden",
-    note: "Hoy en testnet: el ciclo de vida del escrow es simulado mientras se construye el contrato on-chain.",
+    note: "Hoy en testnet: el contrato de escrow en Soroban ya está desplegado, y la API aún simula el ciclo de vida de la orden mientras se integra.",
   },
   quote: {
     eyebrow: "Cotización en vivo",
