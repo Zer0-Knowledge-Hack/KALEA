@@ -82,5 +82,7 @@ stellar contract build
 stellar contract deploy --wasm target/wasm32v1-none/release/kalea_escrow.wasm --source <cuenta> --network testnet -- --admin <G…> --arbiter <G…> --treasury <G…> --token <contrato USDC> --fee_bps 50
 ```
 
+Desplegado en testnet: ver [deployments/testnet.md](deployments/testnet.md).
+
 Pendiente antes de mainnet: auditoría externa, admin y árbitro como multisig, y monitoreo de los eventos `Created`,
 `Released`, `Refunded`, `Disputed` y `ConfigChanged`.
