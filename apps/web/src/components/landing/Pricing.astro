@@ -1,0 +1,34 @@
+---
+import { DEFAULT_MERCHANT_REWARD_BPS } from "@kalea/shared";
+import { eyebrow } from "./styles";
+
+const rewardPct = DEFAULT_MERCHANT_REWARD_BPS / 100;
+const rows: [string, string, string][] = [
+  ["End user", "One all-in price", "No Kalea fee line"],
+  ["Integrator", "Per-transaction fee", "Debited from a prefunded USDC balance"],
+  ["Merchant", `Earns ${rewardPct}% per order`, "Locked in 7-day cycles"],
+  ["Insurance fund", "About 0.1% per order", "Funded from the spread"],
+];
+---
+
+<section id="pricing" class="border-y border-line bg-ink-2/40">
+  <div class="mx-auto grid max-w-6xl gap-12 px-4 py-28 sm:px-6 lg:grid-cols-[1fr_1.3fr]">
+    <div>
+      <p class={eyebrow}>Pricing</p>
+      <h2 class="mt-4 text-4xl font-bold tracking-tight">Only integrators pay Kalea.</h2>
+      <p class="mt-5 text-soft">Prices are set per country and side over a market reference rate. The spread funds the merchant reward and the insurance fund. You can add your own markup on top.</p>
+      <div class="mt-10 grid grid-cols-2 gap-6">
+        <div><p class="text-5xl font-bold text-lime"><span data-count={rewardPct} data-decimals="1" data-suffix="%">{rewardPct.toFixed(1)}%</span></p><p class="mt-1 text-sm text-soft">merchant reward per order</p></div>
+        <div><p class="text-5xl font-bold text-coral"><span data-count="7">7</span></p><p class="mt-1 text-sm text-soft">day reward lock cycle</p></div>
+      </div>
+    </div>
+    <div class="overflow-hidden rounded-3xl border border-line">
+      <div class="grid grid-cols-3 gap-2 bg-ink-3 px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-mute sm:px-5"><span>Who</span><span>What</span><span class="text-lime">How</span></div>
+      {rows.map(([l, a, b], i) => (
+        <div data-reveal style={`--from:translateY(10px);--delay:${0.1 * i}s`} class="grid grid-cols-3 items-center gap-2 border-t border-line px-4 py-4 text-xs sm:px-5 sm:text-sm">
+          <span class="text-soft">{l}</span><span class="font-semibold">{a}</span><span class="text-soft">{b}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
