@@ -51,7 +51,14 @@ The business model was redefined (2026-11-07/08) and validated with on-chain evi
   - RED was observed (module missing). GREEN: shared 24/24, api 10/10, typecheck clean. Parent spot check re-ran `pnpm test` and `pnpm typecheck`.
   - About 420 lines; the legacy shim and the QR change pushed it over the estimate.
   - Previous plan: Add Country, FiatCurrency, Rail, Integrator and LiquidityProvider. Replace `amountBob` with `fiatAmount` + `fiatCurrency`. Add a quote with the price breakdown, a single `OrderStatus` lifecycle with escrow-first ordering, and LATAM demo data. Rewrite the tests in English. Route: delegated. Est. ~250-300 lines.
-- [ ] **T3: API**. Add `/v1` integrator-scoped quotes and orders, integrator API-key auth (SEP-10 stays for LPs), prefunded balance and fee debit, English JSON errors, env and tests. Route: delegated. Est. ~300-400 lines.
+- [x] **T3: API** (partial: `.env.example` pending). Slice branch `feat/b2b-latam-ramp-t3-api`.
+  - `/v1` integrator API with SHA-256 hashed API keys, and merchant SEP-10 under `/v1/merchants/auth/*`.
+  - Endpoints: corridors, quotes, orders (402 `insufficient_balance`, 409 `no_merchant_capacity`), balance, lifecycle events simulation. On release the fee is debited and the reward enters the vault with a 7-day lock.
+  - Uniform JSON errors.
+  - RED was observed (28/28 failing, `createApp` missing). GREEN: api 28/28, shared 24/24, typecheck clean, web build OK. Parent spot check re-ran the api tests.
+  - About 860 lines, mostly tests.
+  - PENDING: `apps/api/.env.example` could not be edited (path denied by permission settings). It needs `INTEGRATOR_API_KEYS` and `MERCHANT_ACCOUNTS`, applied by the user.
+  - Previous plan: Add `/v1` integrator-scoped quotes and orders, integrator API-key auth (SEP-10 stays for LPs), prefunded balance and fee debit, English JSON errors, env and tests. Route: delegated. Est. ~300-400 lines.
 - [ ] **T4: Web**. English B2B landing (integrators, coverage, how it works, LPs), `lang="en"`, a country picker with an all-in price, integrator/LP dashboard stubs, and English wallet and connect copy. Remove the "Roadmap · Stellar Community Fund" eyebrow in `sections.tsx:159` (no funding-application content in the project). Route: delegated. Est. ~400-500 lines.
 
 ## Acceptance criteria
