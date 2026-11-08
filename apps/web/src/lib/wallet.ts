@@ -1,44 +1,50 @@
-"use client";
-
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
-import { isConnected, requestAccess, signTransaction } from "@stellar/freighter-api";
+import { useCallback, useEffect, useState } from "preact/hooks";
 import { api, type MerchantSession } from "./api";
 
-type Status = "idle" | "connecting" | "signing" | "ready" | "error";
+export type WalletStatus = "idle" | "connecting" | "signing" | "ready" | "error";
 
 /** Merchant (liquidity provider) session obtained through SEP-10 with Freighter. */
-interface WalletState {
+export interface WalletState {
   account: string | null;
   merchantId: string | null;
   token: string | null;
-  status: Status;
+  status: WalletStatus;
   error: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
 }
 
-const WalletContext = createContext<WalletState | null>(null);
 const STORAGE_KEY = "kalea.merchant-session";
 
-export function WalletProvider({ children }: { children: React.ReactNode }) {
+function loadSession(): MerchantSession | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null") as MerchantSession | null;
+    return saved?.account && saved?.token && saved?.merchantId ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+/** SEP-10 sign-in with Freighter. The session is kept in localStorage so a reload stays signed in. */
+export function useWallet(): WalletState {
   const [session, setSession] = useState<MerchantSession | null>(null);
-  const [status, setStatus] = useState<Status>("idle");
+  const [status, setStatus] = useState<WalletStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null") as MerchantSession | null;
-      if (saved?.account && saved?.token && saved?.merchantId) {
-        setSession(saved);
-        setStatus("ready");
-      }
-    } catch {}
+    const saved = loadSession();
+    if (saved) {
+      setSession(saved);
+      setStatus("ready");
+    }
   }, []);
 
   const connect = useCallback(async () => {
     setError(null);
     try {
       setStatus("connecting");
+      // Loaded on demand: keeps the wallet SDK out of the initial island bundle and out of the static build.
+      const { isConnected, requestAccess, signTransaction } = await import("@stellar/freighter-api");
       if (!(await isConnected()).isConnected) throw new Error("Install the Freighter wallet to continue");
       const access = await requestAccess();
       if (access.error) throw new Error(String(access.error.message ?? access.error));
@@ -64,18 +70,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
   }, []);
 
-  return (
-    <WalletContext.Provider
-      value={{ account: session?.account ?? null, merchantId: session?.merchantId ?? null, token: session?.token ?? null, status, error, connect, disconnect }}>
-      {children}
-    </WalletContext.Provider>
-  );
-}
-
-export function useWallet() {
-  const ctx = useContext(WalletContext);
-  if (!ctx) throw new Error("useWallet must be used inside WalletProvider");
-  return ctx;
+  return { account: session?.account ?? null, merchantId: session?.merchantId ?? null, token: session?.token ?? null, status, error, connect, disconnect };
 }
 
 export const shortAddress = (a: string) => `${a.slice(0, 4)}…${a.slice(-4)}`;
