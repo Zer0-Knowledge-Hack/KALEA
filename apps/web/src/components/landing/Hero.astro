@@ -1,16 +1,17 @@
 ---
 import RoadArrow from "../ornaments/RoadArrow.astro";
 import StreetPerspective from "../ornaments/StreetPerspective.astro";
+import { useTranslations, type Locale } from "../../i18n";
 import { CONTACT_URL, btnGhostDark, btnPrimary, container } from "./styles";
 
-const status = "First live network — USDC on Stellar testnet";
-const lines = [
-  { words: ["Ramps", "for", "LATAM", "businesses."], tone: "" },
-  { words: ["Without", "the", "complexity."], tone: "text-deep-soft" },
-];
-const sub = "One API for on-ramps, off-ramps and QR payments across Latin America.";
-const primary = "Get API access";
-const secondary = "Book a demo";
+interface Props {
+  locale: Locale;
+}
+
+const { hero } = useTranslations(Astro.props.locale);
+const { status, sub, primary, secondary } = hero;
+// The second headline line is muted.
+const lines = hero.lines.map((words, l) => ({ words, tone: l > 0 ? "text-deep-soft" : "" }));
 ---
 
 <!-- The copy sits above the horizon; the street perspective owns the lower band and nothing covers it. -->
@@ -22,7 +23,7 @@ const secondary = "Book a demo";
         <span class:list={["block", line.tone]}>
           {line.words.map((w, i) => (
             <span class="mr-[0.22em] inline-block overflow-hidden pb-[0.08em] align-bottom">
-              <span class="rise" style={`animation-delay:${0.15 + (l * 4 + i) * 0.07}s`}>{w}</span>
+              <span class="rise" style={`animation-delay:${0.15 + (l * lines[0].words.length + i) * 0.07}s`}>{w}</span>
             </span>
           ))}
         </span>

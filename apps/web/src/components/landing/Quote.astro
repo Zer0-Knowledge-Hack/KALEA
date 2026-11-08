@@ -2,13 +2,16 @@
 import QuoteWidget from "../islands/QuoteWidget";
 import CropCorners from "../ornaments/CropCorners.astro";
 import CrownPattern from "../ornaments/CrownPattern.astro";
+import { LOCALE_META, useTranslations, type Locale } from "../../i18n";
 import { container, eyebrow, h2, sectionY } from "./styles";
 
-const copy = {
-  eyebrow: "Live quote",
-  headline: "One price. The exact amount.",
-  sub: "A fixed all-in quote from the testnet demo API. What your user sees is what they pay.",
-};
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const copy = t.quote;
 ---
 
 <section id="quote" class="bg-deep">
@@ -23,7 +26,8 @@ const copy = {
     <!-- Crop corners frame the widget as an abstract viewfinder, not a device. -->
     <div class="relative p-5 sm:p-8 lg:col-span-6 lg:col-start-7">
       <CropCorners />
-      <QuoteWidget client:visible />
+      <!-- Strings and display names are serialized into the island; API values stay untouched. -->
+      <QuoteWidget client:visible t={t.quoteWidget} intl={LOCALE_META[locale].intl} countries={t.countries} rails={t.rails} />
     </div>
   </div>
 </section>
