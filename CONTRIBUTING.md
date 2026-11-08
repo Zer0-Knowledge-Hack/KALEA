@@ -64,6 +64,7 @@ We practice tests-first development across three testing tiers:
    - Multi-step simulations of the full order escrow lifecycle in `apps/api/src/lifecycle.test.ts` (quotes, order matching, simulated escrow funding, payment transitions, balance debits, disputes).
 3. **End-to-End tests (`pnpm test:e2e`):**
    - Browser verification with Playwright in `apps/web` (landing page layout, interactive Preact islands, corridor quote calculator).
+   - Run `pnpm --filter @kalea/web exec playwright install chromium` once before running local E2E tests.
 
 ### Tests first
 

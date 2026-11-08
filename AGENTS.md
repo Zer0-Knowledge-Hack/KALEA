@@ -38,8 +38,8 @@ Kalea is **B2B fiat <-> USDC ramp infrastructure on Stellar for Latin America**.
 |---|---|---|---|
 | `packages/shared/` | Domain types, corridor catalogs, order lifecycle state machine | Pure TypeScript | Vitest (Unit) |
 | `apps/api/` | Integrator `/v1` API, merchant SEP-10 challenge/login, demo endpoints | Hono, Node.js, Zod | Vitest (Unit & Integration) |
-| `apps/web/` | B2B landing page, interactive quote demo, merchant dashboard | Astro 5, Preact islands, Tailwind 4 | Playwright (E2E) |
-| `contracts/` | Soroban smart contracts | Rust (`#![no_std]`), Soroban SDK 28 | `cargo test` (Host unit & mutation) |
+| `apps/web/` | B2B integrator landing (en, es, pt-br), interactive quote demo, brand guidelines | Astro 7 (`^7.4.7`), Preact islands, Tailwind 4 | Playwright (E2E) |
+| `contracts/` | Soroban smart contracts (`kalea-escrow` v1) | Rust (`#![no_std]`), Soroban SDK 28 | `cargo test` (Host unit tests) |
 | `docs/` | Architectural rationale, business model, order lifecycle specs | Markdown | Review |
 
 ---
@@ -53,7 +53,7 @@ The repository enforces a structured three-tier testing strategy:
 - **Scope:** Pure functions, calculations (spreads, amounts, fee tiers), Zod schema validations, and contract invariants.
 - **Commands:**
   ```bash
-  pnpm test:unit           # Runs unit tests in packages/shared and apps/api
+  pnpm test:unit           # Runs unit tests in packages/shared and apps/api (excludes lifecycle)
   cargo test               # Runs Soroban smart contract host unit tests (in contracts/)
   ```
 
@@ -73,10 +73,15 @@ The repository enforces a structured three-tier testing strategy:
 - **Scope:** Full browser testing of the web app (`apps/web`):
   - Page rendering, responsive layouts, navigation.
   - Interactive Preact islands (QuoteWidget country/rail selection, amount calculation, error boundaries).
+- **Prerequisite (one-time on a fresh clone):**
+  ```bash
+  pnpm --filter @kalea/web exec playwright install chromium
+  ```
 - **Command:**
   ```bash
-  pnpm test:e2e            # Runs Playwright E2E suite
+  pnpm test:e2e            # Runs Playwright E2E suite locally against dev server
   ```
+  *(Note: E2E is currently a local verification tier before opening web-affecting PRs).*
 
 ### 4.4 All checks combined
 Before opening any PR, run all checks locally:
@@ -94,7 +99,7 @@ cargo test                 # (if modifying contracts)
 1. **Language:** English **only** for all artifacts: code, comments, identifiers, UI copy, docs, commit messages, and PR descriptions.
 2. **Git provenance & conventional commits:**
    - Use Conventional Commits (`feat(scope): ...`, `fix(scope): ...`, `docs: ...`, `chore: ...`).
-   - **Never add "Co-Authored-By" or AI attribution trailers** (Claude, Cursor, Antigravity, ChatGPT, Copilot, etc.). CI automatically rejects any PR containing AI attribution.
+   - **Never add "Co-Authored-By" or AI attribution trailers** (Claude, Cursor, Antigravity, ChatGPT, Copilot, etc.) to commit messages or PR descriptions. Commit messages are checked by CI; PR descriptions must follow the same rule.
 3. **Branch protection & PR policy:**
    - Direct pushes to `main` are disabled (`allow_force_pushes: false`, `enforce_admins: true`).
    - Every change must enter `main` through a pull request.

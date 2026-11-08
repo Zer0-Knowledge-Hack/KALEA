@@ -9,7 +9,7 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:unit": "vitest run src/demo.test.ts src/app.test.ts",
+    "test:unit": "vitest run --exclude src/lifecycle.test.ts",
     "test:integration": "vitest run src/lifecycle.test.ts"
   },
   "dependencies": {

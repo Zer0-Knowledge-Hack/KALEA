@@ -5,40 +5,42 @@ test.describe("Kalea Landing Page & Quote Demo", () => {
     await page.goto("/");
     await expect(page).toHaveTitle(/Kalea/i);
 
-    // Verify nav logo and links exist
-    const nav = page.locator("nav");
-    await expect(nav).toBeVisible();
-
-    // Verify main hero headline
-    const main = page.locator("main");
-    await expect(main).toBeVisible();
+    // Verify nav and main sections
+    await expect(page.locator("nav")).toBeVisible();
+    await expect(page.locator("main")).toBeVisible();
   });
 
-  test("interacts with the quote widget island", async ({ page }) => {
+  test("interacts with the quote widget island and computes live rate", async ({ page }) => {
     await page.goto("/");
 
-    // Locate quote widget input
+    // Locate quote section and ensure it is scrolled into viewport to trigger hydration
     const quoteSection = page.locator("#quote");
     await expect(quoteSection).toBeVisible();
+    await quoteSection.scrollIntoViewIfNeeded();
 
-    // Verify interactive amount input in quote widget
-    const amountInput = quoteSection.locator("input[type='number'], input[type='text']").first();
-    if (await amountInput.isVisible()) {
-      await amountInput.fill("500");
-      // Check that a quote response or rate calculation appears
-      await expect(quoteSection).toContainText(/USDC|BOB|ARS|BRL|COP|MXN|PEN/);
-    }
+    // Verify amount input renders and is interactive
+    const amountInput = page.getByTestId("quote-amount-input");
+    await expect(amountInput).toBeVisible();
+
+    // Fill with valid amount
+    await amountInput.fill("500");
+
+    // Computed output must not be empty or placeholder "—"
+    const usdcOutput = page.getByTestId("quote-usdc-amount");
+    await expect(usdcOutput).toBeVisible();
+    await expect(usdcOutput).not.toHaveText("—");
+    await expect(usdcOutput).not.toHaveText("");
+
+    // Assert rate row displays a valid 1 USDC = X conversion
+    const rateRow = quoteSection.locator("dl dd").first();
+    await expect(rateRow).toContainText("1 USDC =");
   });
 
-  test("displays coverage and pricing sections", async ({ page }) => {
+  test("displays coverage, developers and pricing sections", async ({ page }) => {
     await page.goto("/");
 
-    // Coverage section
-    const coverage = page.locator("#coverage");
-    await expect(coverage).toBeVisible();
-
-    // Pricing section
-    const pricing = page.locator("#pricing");
-    await expect(pricing).toBeVisible();
+    await expect(page.locator("#coverage")).toBeVisible();
+    await expect(page.locator("#developers")).toBeVisible();
+    await expect(page.locator("#pricing")).toBeVisible();
   });
 });
