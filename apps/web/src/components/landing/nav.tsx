@@ -4,13 +4,12 @@ import Link from "next/link";
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
 import { useState } from "react";
 import { Logo } from "@/components/logo";
-import { ConnectButton } from "@/components/connect-button";
 
 const links = [
-  ["Cotizar", "#cotizar"],
-  ["Cómo funciona", "#como-funciona"],
-  ["Seguridad", "#seguridad"],
-  ["Roadmap", "#roadmap"],
+  ["How it works", "#how-it-works"],
+  ["Coverage", "#coverage"],
+  ["Pricing", "#pricing"],
+  ["Merchants", "#merchants"],
   ["FAQ", "#faq"],
 ];
 
@@ -31,7 +30,7 @@ export function Nav() {
       className={`fixed inset-x-0 top-0 z-50 transition-colors ${solid || open ? "border-b border-line bg-ink/90 backdrop-blur-lg" : ""}`}
     >
       <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" aria-label="Kalea inicio"><Logo /></Link>
+        <Link href="/" aria-label="Kalea home"><Logo /></Link>
         <ul className="hidden gap-7 md:flex">
           {links.map(([t, h]) => (
             <li key={h}>
@@ -40,9 +39,9 @@ export function Nav() {
           ))}
         </ul>
         <div className="flex items-center gap-2">
-          <Link href="/app" className="hidden font-mono text-[11px] uppercase tracking-[0.14em] text-soft hover:text-paper sm:block">App</Link>
-          <ConnectButton />
-          <button onClick={() => setOpen(!open)} aria-label="Menú" aria-expanded={open}
+          <Link href="/app" className="hidden font-mono text-[11px] uppercase tracking-[0.14em] text-soft hover:text-paper sm:block">Merchant login</Link>
+          <a href="#contact" className="rounded-full bg-lime px-4 py-2 font-mono text-xs font-semibold uppercase tracking-wider text-lime-ink transition hover:brightness-110">Talk to us</a>
+          <button onClick={() => setOpen(!open)} aria-label="Menu" aria-expanded={open}
             className="grid size-9 place-items-center rounded-full border border-line md:hidden">
             <span className="relative block h-3 w-4">
               <motion.span animate={open ? { rotate: 45, y: 5 } : { rotate: 0, y: 0 }} className="absolute left-0 top-0 h-px w-4 bg-paper" />
@@ -55,7 +54,7 @@ export function Nav() {
         {open && (
           <motion.ul initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden px-4 md:hidden">
-            {[...links, ["App", "/app"]].map(([t, h], i) => (
+            {[...links, ["Merchant login", "/app"]].map(([t, h], i) => (
               <motion.li key={h} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.05 * i }}
                 className="border-t border-line first:border-0">
                 <a href={h} onClick={() => setOpen(false)} className="block py-4 text-2xl font-semibold">{t}</a>

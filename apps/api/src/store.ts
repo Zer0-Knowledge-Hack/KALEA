@@ -5,7 +5,7 @@ import {
   type CorridorPricing,
   type Integrator,
   type Merchant,
-  type RampOrder,
+  type Order,
 } from "@kalea/shared";
 
 /** SHA-256 hex digest of an integrator API key. Raw keys are never stored. */
@@ -51,7 +51,7 @@ export function createStore(seed: Partial<StoreSeed> = {}) {
     pricing: seed.pricing ?? DEMO_CORRIDOR_PRICING,
     integratorKeys: (seed.integratorKeys ?? []).filter((k) => integrators.has(k.integratorId)),
     merchantAccounts: seed.merchantAccounts ?? [],
-    orders: new Map<string, RampOrder>(),
+    orders: new Map<string, Order>(),
     /** Merchant reward vault (simulation of the Soroban reward vault). */
     rewardVault: [] as RewardEntry[],
     /** Fees debited per integrator on release (fee statement). */

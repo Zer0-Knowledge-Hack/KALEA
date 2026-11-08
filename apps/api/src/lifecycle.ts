@@ -8,8 +8,8 @@ import {
   canTransition,
   isTerminalStatus,
   roundTo,
-  type RampOrder,
-  type RampOrderStatus,
+  type Order,
+  type OrderStatus,
   type Side,
 } from "@kalea/shared";
 import type { Actor } from "./auth.js";
@@ -35,7 +35,7 @@ const ACTORS: Record<Side, Record<EventType, ActorKind[]>> = {
 };
 
 const sum = (values: number[]) => roundTo(values.reduce((a, b) => a + b, 0), USDC_DECIMALS);
-const isOpen = (o: RampOrder) => !isTerminalStatus(o.status);
+const isOpen = (o: Order) => !isTerminalStatus(o.status);
 
 /** Fees of open orders, held against the integrator's prefunded balance until release or refund. */
 export const reservedFeesUsdc = (store: Store, integratorId: string) =>
@@ -45,7 +45,7 @@ export const reservedFeesUsdc = (store: Store, integratorId: string) =>
 export const committedUsdc = (store: Store, merchantId: string) =>
   sum([...store.orders.values()].filter((o) => o.merchantId === merchantId && isOpen(o)).map((o) => o.breakdown.escrowUsdc));
 
-export function applyEvent(store: Store, order: RampOrder, to: RampOrderStatus & EventType, actor: Actor, now: number): RampOrder {
+export function applyEvent(store: Store, order: Order, to: OrderStatus & EventType, actor: Actor, now: number): Order {
   const allowed = ACTORS[order.side][to].includes(actor.kind);
   // Idempotent retry: repeating the transition that produced the current status returns it unchanged.
   if (order.status === to && allowed) return order;
@@ -54,7 +54,7 @@ export function applyEvent(store: Store, order: RampOrder, to: RampOrderStatus &
   if (!allowed) throw new ApiError(403, "forbidden_actor", `A ${actor.kind} cannot set ${to} on a ${order.side} order`);
 
   const at = new Date(now).toISOString();
-  const next: RampOrder = { ...order, status: to, updatedAt: at };
+  const next: Order = { ...order, status: to, updatedAt: at };
   if (to === "escrow_locked") next.escrowId = `sim_escrow_${crypto.randomUUID()}`;
   if (to === "released") {
     const { integratorFeeUsdc, merchantRewardUsdc, insuranceUsdc } = order.breakdown;
@@ -75,13 +75,13 @@ export function applyEvent(store: Store, order: RampOrder, to: RampOrderStatus &
 }
 
 /** Integrators see exact amounts and the fee they pay, never the internal breakdown. */
-export function integratorView(order: RampOrder) {
+export function integratorView(order: Order) {
   const { breakdown, ...rest } = order;
   return { ...rest, kind: order.kind ?? "transfer", integratorFeeUsdc: breakdown.integratorFeeUsdc };
 }
 
 /** Merchants see exact amounts plus their reward; never the Kalea fee or the integrator's identity. */
-export function merchantView(order: RampOrder) {
+export function merchantView(order: Order) {
   const { breakdown, integratorId: _integratorId, endUserRef: _endUserRef, ...rest } = order;
   return { ...rest, kind: order.kind ?? "transfer", merchantRewardUsdc: breakdown.merchantRewardUsdc, escrowUsdc: breakdown.escrowUsdc };
 }
