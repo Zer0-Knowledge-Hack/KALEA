@@ -1,0 +1,24 @@
+---
+/** Lane: a dashed connector with an arrowhead that shows flow from one step to the next. Decorative only. */
+interface Props {
+  color?: "ocean" | "apricot";
+  /** "h" points right, "v" points down. */
+  direction?: "h" | "v";
+  class?: string;
+}
+
+const { color = "ocean", direction = "h", class: className = "" } = Astro.props;
+const tone = color === "ocean" ? "stroke-ocean fill-ocean" : "stroke-apricot fill-apricot";
+---
+
+{direction === "h" ? (
+  <svg viewBox="0 0 48 16" width="48" height="16" class:list={["pointer-events-none overflow-visible", tone, className]} aria-hidden="true" focusable="false">
+    <line x1="2" y1="8" x2="36" y2="8" fill="none" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round" />
+    <polygon points="36,2.5 46,8 36,13.5" stroke="none" />
+  </svg>
+) : (
+  <svg viewBox="0 0 16 48" width="16" height="48" class:list={["pointer-events-none overflow-visible", tone, className]} aria-hidden="true" focusable="false">
+    <line x1="8" y1="2" x2="8" y2="36" fill="none" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round" />
+    <polygon points="2.5,36 8,46 13.5,36" stroke="none" />
+  </svg>
+)}
