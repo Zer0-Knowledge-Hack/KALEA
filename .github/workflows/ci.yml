@@ -41,4 +41,4 @@ jobs:
         run: |
           curl -sSL https://github.com/stellar/stellar-cli/releases/download/v28.0.0/stellar-cli-28.0.0-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C /usr/local/bin stellar
           stellar --version
-      - run: stellar contract build
+      - run: stellar contract build --meta source_repo=github:Zer0-Knowledge-Hack/KALEA

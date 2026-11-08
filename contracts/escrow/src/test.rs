@@ -3,7 +3,7 @@ extern crate std;
 
 use super::*;
 use soroban_sdk::{
-    testutils::{Address as _, AuthorizedFunction, Ledger, MockAuth, MockAuthInvoke},
+    testutils::{Address as _, AuthorizedFunction, IssuerFlags, Ledger, MockAuth, MockAuthInvoke},
     token::{StellarAssetClient, TokenClient},
     IntoVal, Symbol,
 };
@@ -34,6 +34,8 @@ fn setup() -> S<'static> {
     let (admin, arbiter, operator, vault, fund, merchant, user) =
         (g(), g(), g(), g(), g(), g(), g());
     let sac = env.register_stellar_asset_contract_v2(g());
+    // USDC on Stellar is issued with AUTH_REVOCABLE (Circle can freeze accounts)
+    sac.issuer().set_flag(IssuerFlags::RevocableFlag);
     StellarAssetClient::new(&env, &sac.address()).mint(&merchant, &(10_000 * UNIT));
     StellarAssetClient::new(&env, &sac.address()).mint(&user, &(10_000 * UNIT));
     let id = env.register(
@@ -158,7 +160,7 @@ fn lock_takes_the_fixed_total_and_requires_the_depositor() {
     assert_eq!(o.status, Status::EscrowLocked);
     assert_eq!(o.payment_deadline, START + PAY);
     assert_eq!(o.confirmation_deadline, 0);
-    assert_eq!(s.esc.order_by_ref(&rf(&s.env, 1)), id);
+    assert_eq!(s.esc.order_by_ref(&s.merchant, &rf(&s.env, 1)), id);
 }
 
 #[test]
@@ -244,9 +246,52 @@ fn lock_rejects_duplicate_reference() {
     buy(&s, 7);
     assert_eq!(
         s.esc
-            .try_lock(&params(&s, &s.user, &s.merchant, &s.merchant, 7)),
+            .try_lock(&params(&s, &s.merchant, &s.user, &s.merchant, 7)),
         Err(Ok(Error::DuplicateRef))
     );
+}
+
+#[test]
+fn a_reference_cannot_be_squatted_by_another_depositor() {
+    // an attacker locking first with the same reference does not block the real order
+    let s = setup();
+    let attacker = Address::generate(&s.env);
+    StellarAssetClient::new(&s.env, &s.usdc.address).mint(&attacker, &(10 * UNIT));
+    let mut p = params(&s, &attacker, &s.user, &attacker, 7);
+    p.recipient_amount = MIN_RECIPIENT_AMOUNT;
+    p.reward = 0;
+    p.insurance = 0;
+    let squat = s.esc.lock(&p);
+    let real = buy(&s, 7);
+    assert_ne!(squat, real);
+    assert_eq!(s.esc.order_by_ref(&s.merchant, &rf(&s.env, 7)), real);
+}
+
+#[test]
+fn lock_rejects_dust_orders() {
+    let s = setup();
+    let mut p = params(&s, &s.merchant, &s.user, &s.merchant, 1);
+    p.recipient_amount = MIN_RECIPIENT_AMOUNT - 1;
+    p.reward = 0;
+    p.insurance = 0;
+    assert_eq!(s.esc.try_lock(&p), Err(Ok(Error::InvalidAmount)));
+    p.recipient_amount = MIN_RECIPIENT_AMOUNT;
+    s.esc.lock(&p);
+}
+
+#[test]
+fn frozen_recipient_can_be_refunded_through_a_dispute() {
+    // the issuer revokes the recipient's authorization: release fails, the arbiter refunds the depositor
+    let s = setup();
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    StellarAssetClient::new(&s.env, &s.usdc.address).set_authorized(&s.user, &false);
+    assert!(s.esc.try_release(&id).is_err());
+    assert_eq!(status(&s, id), Status::FiatSent);
+    s.esc.dispute(&id, &s.merchant);
+    s.esc.resolve(&id, &false);
+    assert_eq!(s.usdc.balance(&s.merchant), 10_000 * UNIT);
+    assert_eq!(s.usdc.balance(&s.esc.address), 0);
 }
 
 #[test]
@@ -259,7 +304,7 @@ fn failed_lock_leaves_no_trace() {
         .is_err());
     assert_eq!(s.esc.try_get_order(&0), Err(Ok(Error::OrderNotFound)));
     assert_eq!(
-        s.esc.try_order_by_ref(&rf(&s.env, 1)),
+        s.esc.try_order_by_ref(&broke, &rf(&s.env, 1)),
         Err(Ok(Error::OrderNotFound))
     );
     assert_eq!(buy(&s, 1), 0);
@@ -655,8 +700,9 @@ fn nothing_moves_without_signatures() {
     assert!(s.esc.try_propose_admin(&s.user).is_err());
     assert!(s
         .esc
-        .try_upgrade(&BytesN::from_array(&s.env, &[0; 32]))
+        .try_propose_upgrade(&BytesN::from_array(&s.env, &[1; 32]))
         .is_err());
+    assert!(s.esc.try_cancel_upgrade().is_err());
     assert_eq!(s.usdc.balance(&s.esc.address), 3 * 1016 * UNIT / 10);
 }
 
@@ -771,4 +817,77 @@ fn funds_are_conserved_across_mixed_orders() {
     assert_eq!(s.usdc.balance(&s.esc.address), 0);
     let after: i128 = parties.iter().map(|a| s.usdc.balance(a)).sum();
     assert_eq!(before, after);
+}
+
+// ---------------- upgrades ----------------
+
+#[test]
+fn upgrade_is_time_locked() {
+    let s = setup();
+    let h = BytesN::from_array(&s.env, &[1; 32]);
+    assert_eq!(s.esc.try_upgrade(), Err(Ok(Error::NoPendingUpgrade)));
+    s.esc.propose_upgrade(&h);
+    assert!(signed_by(&s, &s.admin, "propose_upgrade"));
+    let p = s.esc.pending_upgrade().unwrap();
+    assert_eq!(
+        (p.wasm_hash, p.ready_at),
+        (h.clone(), START + UPGRADE_DELAY_SECS)
+    );
+    advance(&s, UPGRADE_DELAY_SECS - 1);
+    assert_eq!(s.esc.try_upgrade(), Err(Ok(Error::UpgradeNotReady)));
+    s.esc.cancel_upgrade();
+    assert!(signed_by(&s, &s.admin, "cancel_upgrade"));
+    assert_eq!(s.esc.pending_upgrade(), None);
+    assert_eq!(s.esc.try_cancel_upgrade(), Err(Ok(Error::NoPendingUpgrade)));
+    advance(&s, 1);
+    assert_eq!(s.esc.try_upgrade(), Err(Ok(Error::NoPendingUpgrade)));
+}
+
+#[test]
+fn only_the_admin_proposes_upgrades() {
+    let s = setup();
+    let h = BytesN::from_array(&s.env, &[1; 32]);
+    for who in [&s.arbiter, &s.operator, &s.merchant] {
+        let r = s
+            .esc
+            .mock_auths(&[MockAuth {
+                address: who,
+                invoke: &MockAuthInvoke {
+                    contract: &s.esc.address,
+                    fn_name: "propose_upgrade",
+                    args: (h.clone(),).into_val(&s.env),
+                    sub_invokes: &[],
+                },
+            }])
+            .try_propose_upgrade(&h);
+        assert!(r.is_err());
+    }
+    assert_eq!(s.esc.pending_upgrade(), None);
+}
+
+#[test]
+fn config_changes_are_announced() {
+    use soroban_sdk::testutils::Events as _;
+    let s = setup();
+    let arb = Address::generate(&s.env);
+    s.esc.set_arbiter(&arb);
+    assert_eq!(
+        s.env
+            .events()
+            .all()
+            .filter_by_contract(&s.esc.address)
+            .events()
+            .len(),
+        1
+    );
+    s.esc.propose_admin(&arb);
+    assert_eq!(
+        s.env
+            .events()
+            .all()
+            .filter_by_contract(&s.esc.address)
+            .events()
+            .len(),
+        1
+    );
 }

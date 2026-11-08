@@ -29,8 +29,15 @@
 //! - State is written before token transfers (checks-effects-interactions).
 //! - Reward and insurance are capped relative to the recipient amount, so a bad quote cannot drain a lock.
 //! - Pausing only blocks new locks; every exit path keeps working, so funds are never stuck.
-//! - Single token fixed in the constructor (no front-runnable `init`); unique external reference per order;
-//!   checked arithmetic (overflow checks are also on in release); two-step admin transfer.
+//! - Single token fixed in the constructor (no front-runnable `init`); external reference unique per depositor,
+//!   so nobody can squat another party's reference; minimum order size; checked arithmetic (overflow checks are
+//!   also on in release); two-step admin transfer.
+//! - Code upgrades are time-locked: the admin proposes a wasm hash, and it can only be applied after
+//!   `UPGRADE_DELAY_SECS`, so counterparties see it coming. Every role or config change emits an event.
+//!
+//! Trust assumptions: the arbiter decides disputed orders, and the admin (meant to be a multisig) can change the
+//! code after the upgrade delay. If the recipient cannot receive the token (no trustline, frozen by the issuer),
+//! `release` fails; the order can then be disputed and the arbiter can refund the depositor.
 #![no_std]
 
 use soroban_sdk::{
@@ -48,6 +55,10 @@ pub const MAX_INSURANCE_BPS: i128 = 50;
 /// Bounds for `payment_timeout` and `confirmation_timeout`, in seconds.
 pub const MIN_TIMEOUT_SECS: u64 = 60;
 pub const MAX_TIMEOUT_SECS: u64 = 7 * 24 * 60 * 60;
+/// Minimum recipient amount: 1 USDC (7 decimals). Blocks dust orders.
+pub const MIN_RECIPIENT_AMOUNT: i128 = 10_000_000;
+/// Delay between proposing and applying a code upgrade.
+pub const UPGRADE_DELAY_SECS: u64 = 3 * 24 * 60 * 60;
 
 const DAY_LEDGERS: u32 = 17_280; // ~5 s per ledger
 const INSTANCE_BUMP: u32 = 30 * DAY_LEDGERS;
@@ -72,6 +83,8 @@ pub enum Error {
     NoPendingAdmin = 11,
     Overflow = 12,
     NotAllowed = 13,
+    NoPendingUpgrade = 14,
+    UpgradeNotReady = 15,
 }
 
 #[contracttype]
@@ -145,7 +158,15 @@ enum Key {
     PendingAdmin,
     NextId,
     Order(u64),
-    Ref(BytesN<32>),
+    Ref(Address, BytesN<32>),
+    PendingUpgrade,
+}
+
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PendingUpgrade {
+    pub wasm_hash: BytesN<32>,
+    pub ready_at: u64,
 }
 
 // ---------- events ----------
@@ -196,7 +217,33 @@ pub struct Disputed {
 
 #[contractevent]
 pub struct ConfigChanged {
+    pub admin: Address,
+    pub arbiter: Address,
+    pub operator: Address,
+    pub reward_vault: Address,
+    pub insurance_fund: Address,
     pub paused: bool,
+}
+
+#[contractevent]
+pub struct AdminProposed {
+    pub new_admin: Address,
+}
+
+#[contractevent]
+pub struct UpgradeProposed {
+    pub wasm_hash: BytesN<32>,
+    pub ready_at: u64,
+}
+
+#[contractevent]
+pub struct UpgradeCancelled {
+    pub wasm_hash: BytesN<32>,
+}
+
+#[contractevent]
+pub struct Upgraded {
+    pub wasm_hash: BytesN<32>,
 }
 
 // ---------- helpers ----------
@@ -213,7 +260,15 @@ fn save_config(env: &Env, c: &Config) {
     env.storage()
         .instance()
         .extend_ttl(INSTANCE_THRESHOLD, INSTANCE_BUMP);
-    ConfigChanged { paused: c.paused }.publish(env);
+    ConfigChanged {
+        admin: c.admin.clone(),
+        arbiter: c.arbiter.clone(),
+        operator: c.operator.clone(),
+        reward_vault: c.reward_vault.clone(),
+        insurance_fund: c.insurance_fund.clone(),
+        paused: c.paused,
+    }
+    .publish(env);
 }
 
 fn load(env: &Env, id: u64) -> Result<Order, Error> {
@@ -333,7 +388,7 @@ impl KaleaEscrow {
         if p.merchant != p.depositor && p.merchant != p.recipient {
             return Err(Error::InvalidMerchant);
         }
-        if p.recipient_amount <= 0 || p.reward < 0 || p.insurance < 0 {
+        if p.recipient_amount < MIN_RECIPIENT_AMOUNT || p.reward < 0 || p.insurance < 0 {
             return Err(Error::InvalidAmount);
         }
         if !within_cap(p.reward, p.recipient_amount, MAX_REWARD_BPS)?
@@ -343,7 +398,7 @@ impl KaleaEscrow {
         }
         check_timeout(p.payment_timeout)?;
         check_timeout(p.confirmation_timeout)?;
-        let ref_key = Key::Ref(p.external_ref.clone());
+        let ref_key = Key::Ref(p.depositor.clone(), p.external_ref.clone());
         if env.storage().persistent().has(&ref_key) {
             return Err(Error::DuplicateRef);
         }
@@ -550,6 +605,7 @@ impl KaleaEscrow {
     pub fn propose_admin(env: Env, new_admin: Address) {
         config(&env).admin.require_auth();
         env.storage().instance().set(&Key::PendingAdmin, &new_admin);
+        AdminProposed { new_admin }.publish(&env);
     }
 
     /// Step 2: the proposed admin accepts by signing (a mistyped address can never take control).
@@ -567,11 +623,68 @@ impl KaleaEscrow {
         Ok(())
     }
 
-    /// Upgrades the contract code (admin only). Storage and funds are kept.
-    pub fn upgrade(env: Env, wasm_hash: BytesN<32>) {
+    /// Step 1 of an upgrade (admin only): announces the new code. It can be applied after `UPGRADE_DELAY_SECS`.
+    pub fn propose_upgrade(env: Env, wasm_hash: BytesN<32>) -> Result<(), Error> {
         config(&env).admin.require_auth();
+        let ready_at = env
+            .ledger()
+            .timestamp()
+            .checked_add(UPGRADE_DELAY_SECS)
+            .ok_or(Error::Overflow)?;
+        env.storage().instance().set(
+            &Key::PendingUpgrade,
+            &PendingUpgrade {
+                wasm_hash: wasm_hash.clone(),
+                ready_at,
+            },
+        );
+        UpgradeProposed {
+            wasm_hash,
+            ready_at,
+        }
+        .publish(&env);
+        Ok(())
+    }
+
+    /// Withdraws a proposed upgrade (admin only).
+    pub fn cancel_upgrade(env: Env) -> Result<(), Error> {
+        config(&env).admin.require_auth();
+        let p: PendingUpgrade = env
+            .storage()
+            .instance()
+            .get(&Key::PendingUpgrade)
+            .ok_or(Error::NoPendingUpgrade)?;
+        env.storage().instance().remove(&Key::PendingUpgrade);
+        UpgradeCancelled {
+            wasm_hash: p.wasm_hash,
+        }
+        .publish(&env);
+        Ok(())
+    }
+
+    /// Step 2: applies the announced code once the delay has passed. Anyone can trigger it, because the code was
+    /// already chosen and announced by the admin. Storage and funds are kept.
+    pub fn upgrade(env: Env) -> Result<(), Error> {
+        let p: PendingUpgrade = env
+            .storage()
+            .instance()
+            .get(&Key::PendingUpgrade)
+            .ok_or(Error::NoPendingUpgrade)?;
+        if env.ledger().timestamp() < p.ready_at {
+            return Err(Error::UpgradeNotReady);
+        }
+        env.storage().instance().remove(&Key::PendingUpgrade);
+        Upgraded {
+            wasm_hash: p.wasm_hash.clone(),
+        }
+        .publish(&env);
         env.deployer()
-            .update_current_contract(ContractExecutable::Wasm(wasm_hash));
+            .update_current_contract(ContractExecutable::Wasm(p.wasm_hash));
+        Ok(())
+    }
+
+    pub fn pending_upgrade(env: Env) -> Option<PendingUpgrade> {
+        env.storage().instance().get(&Key::PendingUpgrade)
     }
 
     // ----- reads -----
@@ -580,10 +693,14 @@ impl KaleaEscrow {
         load(&env, id)
     }
 
-    pub fn order_by_ref(env: Env, external_ref: BytesN<32>) -> Result<u64, Error> {
+    pub fn order_by_ref(
+        env: Env,
+        depositor: Address,
+        external_ref: BytesN<32>,
+    ) -> Result<u64, Error> {
         env.storage()
             .persistent()
-            .get(&Key::Ref(external_ref))
+            .get(&Key::Ref(depositor, external_ref))
             .ok_or(Error::OrderNotFound)
     }
 
