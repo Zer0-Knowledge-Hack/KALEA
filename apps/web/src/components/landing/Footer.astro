@@ -1,9 +1,14 @@
 ---
+import { Logo } from "../logo";
+import Skyline from "../ornaments/Skyline.astro";
 import { REPO } from "./styles";
 ---
 
-<footer class="border-t border-deep-line">
+<footer class="relative bg-deep">
+  <!-- Skyline band on the top edge, rising over the dusk section above. -->
+  <Skyline class="absolute inset-x-0 bottom-full h-20 w-full sm:h-28" />
   <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-10 font-mono text-[11px] uppercase tracking-wider text-deep-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <a href="/" aria-label="Kalea home" class="normal-case"><Logo size={24} tone="on-dark" /></a>
     <span>© 2026 Kalea · Zer0 Knowledge Hack</span>
     <span>Built on Stellar · Testnet</span>
     <a href={REPO} class="hover:text-apricot">GitHub</a>
