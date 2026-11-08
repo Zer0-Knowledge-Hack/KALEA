@@ -3,7 +3,7 @@
 import { motion, useInView, useReducedMotion, useScroll, useTransform } from "motion/react";
 import { useRef } from "react";
 
-const words = ["Tus", "dólares", "digitales,", "en", "bolivianos", "al", "toque."];
+const words = ["Local", "ramps", "for", "LATAM,", "one", "API."];
 
 const wavePaths = Array.from({ length: 9 }, (_, i) => {
   const o = i * 38;
@@ -50,12 +50,12 @@ export function Hero() {
         <motion.span initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}
           className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-ink-2/80 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-soft">
           <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-lime opacity-60" /><span className="relative size-2 rounded-full bg-lime" /></span>
-          Stellar testnet · Bolivia
+          Stellar testnet · B2B ramp infrastructure
         </motion.span>
         <h1 className="max-w-4xl text-[clamp(2.6rem,7.5vw,6rem)] font-bold leading-[0.95] tracking-tight">
           {words.map((w, i) => (
             <span key={i} className="mr-[0.22em] inline-block overflow-hidden pb-[0.08em] align-bottom">
-              <motion.span className={`inline-block ${w === "bolivianos" ? "text-lime" : ""}`}
+              <motion.span className={`inline-block ${w === "LATAM," ? "text-lime" : ""}`}
                 initial={{ y: "110%", rotate: 6, filter: "blur(6px)" }}
                 animate={{ y: 0, rotate: 0, filter: "blur(0px)" }}
                 transition={{ duration: 0.8, delay: 0.15 + i * 0.07, ease: [0.16, 1, 0.3, 1] }}>
@@ -66,13 +66,13 @@ export function Hero() {
         </h1>
         <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.6 }}
           className="mt-6 max-w-xl text-lg text-soft">
-          Compara operadores P2P, paga con QR Simple o transferencia y recibe USDC en tu wallet Stellar. Con escrow on-chain, sin custodia.
+          Embed fiat on-ramps, off-ramps and QR payments across Latin America. Independent merchants move local fiat under their own accounts; Kalea settles only USDC on Stellar through a per-order escrow.
         </motion.p>
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.95, duration: 0.6 }}
           className="mt-9 flex flex-wrap items-center gap-4">
-          <a href="#cotizar" className="rounded-full bg-lime px-6 py-3 font-semibold text-lime-ink transition hover:-translate-y-0.5 hover:shadow-[0_10px_40px_-10px_#c8f23a]">Cotizar ahora</a>
-          <a href="#como-funciona" className="group flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-soft hover:text-paper">
-            Ver cómo funciona <span className="transition group-hover:translate-x-1">→</span>
+          <a href="#quote" className="rounded-full bg-lime px-6 py-3 font-semibold text-lime-ink transition hover:-translate-y-0.5 hover:shadow-[0_10px_40px_-10px_#c8f23a]">Try a corridor quote</a>
+          <a href="#how-it-works" className="group flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-soft hover:text-paper">
+            How it works <span className="transition group-hover:translate-x-1">→</span>
           </a>
         </motion.div>
       </motion.div>
