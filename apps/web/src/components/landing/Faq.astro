@@ -1,5 +1,5 @@
 ---
-import { eyebrow } from "./styles";
+import { eyebrowLight } from "./styles";
 
 const faqs = [
   ["Who is Kalea for?", "Businesses that want local on-ramps, off-ramps or QR payments in their product: wallets, payment collection, SaaS platforms and others. Kalea does not serve consumers directly."],
@@ -10,18 +10,20 @@ const faqs = [
 ];
 ---
 
-<section id="faq" class="border-t border-deep-line">
-  <div class="mx-auto max-w-3xl px-4 py-28 sm:px-6">
-    <p class={eyebrow}>FAQ</p>
+<section id="faq" class="border-t border-line bg-white text-ink">
+  <div class="mx-auto max-w-3xl px-4 py-24 sm:px-6 sm:py-28">
+    <p class={eyebrowLight}>FAQ</p>
     <h2 class="mt-4 text-4xl font-bold tracking-tight">Frequently asked questions</h2>
-    <div class="mt-10 divide-y divide-deep-line border-y border-deep-line">
+    <div class="mt-10 divide-y divide-line border-y border-line">
       {faqs.map(([q, a], i) => (
         <details name="faq" open={i === 0}>
-          <summary class="flex w-full cursor-pointer list-none items-center justify-between py-5 text-left text-lg font-medium">
+          <summary class="flex w-full cursor-pointer list-none items-center justify-between gap-4 py-5 text-left text-lg font-medium">
             {q}
-            <span class="faq-icon text-2xl text-apricot" aria-hidden="true">+</span>
+            <svg viewBox="0 0 16 16" class="faq-icon size-4 shrink-0 fill-none stroke-ocean" aria-hidden="true" focusable="false">
+              <path d="M3.5 6 8 10.5 12.5 6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
           </summary>
-          <p class="pb-5 text-deep-soft">{a}</p>
+          <p class="pb-5 text-ink/75">{a}</p>
         </details>
       ))}
     </div>
