@@ -4,11 +4,14 @@ import { z } from "zod";
 import {
   COUNTRIES,
   COUNTRY_CATALOG,
+  DEMO_CORRIDOR_PRICING,
+  DEMO_INTEGRATORS,
   USDC_DECIMALS,
   computeQuote,
   isOrderKindAllowed,
   roundTo,
   selectMerchant,
+  type CorridorPricing,
   type Integrator,
   type Order,
   type Rail,
@@ -17,6 +20,7 @@ import { env } from "./env.js";
 import { createAuth, type Actor, type AppEnv, type AuthConfig } from "./auth.js";
 import { ApiError, notFound, onError, parseBody } from "./errors.js";
 import { EVENT_TYPES, applyEvent, committedUsdc, integratorView, merchantView, reservedFeesUsdc } from "./lifecycle.js";
+import { rateLimit, type RateLimitConfig } from "./rate-limit.js";
 import { createStore, type StoreSeed } from "./store.js";
 
 export interface AppConfig extends AuthConfig, Partial<Pick<StoreSeed, "integrators" | "merchants" | "pricing">> {
@@ -26,7 +30,19 @@ export interface AppConfig extends AuthConfig, Partial<Pick<StoreSeed, "integrat
   stellarNetwork: string;
   /** Epoch milliseconds; injectable so tests control quote expiry and reward unlock times. */
   now: () => number;
+  /** Per-IP fixed window shared by the public demo routes. */
+  demoRateLimit: RateLimitConfig;
 }
+
+const corridorsOf = (pricing: CorridorPricing[]) =>
+  pricing.map(({ country }) => ({
+    country,
+    currency: COUNTRY_CATALOG[country].currency,
+    fiatDecimals: COUNTRY_CATALOG[country].fiatDecimals,
+    rails: COUNTRY_CATALOG[country].rails,
+    sides: ["buy", "sell"],
+    orderKinds: { buy: ["transfer"], sell: ["transfer", "qr_payment"] },
+  }));
 
 const quoteSchema = z.object({
   country: z.enum(COUNTRIES),
@@ -51,7 +67,7 @@ const orderSchema = quoteSchema
 const eventSchema = z.object({ type: z.enum(EVENT_TYPES) });
 
 export function createApp(overrides: Partial<AppConfig> = {}) {
-  const config: AppConfig = { ...env, now: Date.now, ...overrides };
+  const config: AppConfig = { ...env, now: Date.now, demoRateLimit: { limit: 30, windowMs: 60_000 }, ...overrides };
   const store = createStore(config);
   const auth = createAuth(store, config);
   const { requireIntegrator, requireMerchant, requireActor } = auth;
@@ -61,8 +77,8 @@ export function createApp(overrides: Partial<AppConfig> = {}) {
     return actor.integrator;
   };
 
-  function quote(integrator: Integrator, input: z.infer<typeof quoteSchema>) {
-    const pricing = store.pricing.find((p) => p.country === input.country);
+  function quote(integrator: Integrator, input: z.infer<typeof quoteSchema>, corridors = store.pricing) {
+    const pricing = corridors.find((p) => p.country === input.country);
     if (!pricing) throw new ApiError(400, "unsupported_country", `Country ${input.country} is not supported yet`);
     if (!isOrderKindAllowed(input.side, input.kind)) {
       throw new ApiError(400, "unsupported_order_kind", `Order kind ${input.kind} is not available for ${input.side} orders`);
@@ -91,22 +107,24 @@ export function createApp(overrides: Partial<AppConfig> = {}) {
     };
   };
 
+  // ---- Public demo (no auth, rate limited) ---------------------------------
+  // Fixed demo pricing and a demo integrator so the static web never holds an API key.
+  const demo = new Hono<AppEnv>()
+    .use("*", rateLimit(config.demoRateLimit, config.now))
+    .get("/corridors", (c) => c.json({ corridors: corridorsOf(DEMO_CORRIDOR_PRICING) }))
+    .post("/quote", async (c) => {
+      const input = await parseBody(c, quoteSchema);
+      // End-user view only: the integrator fee and breakdown stay internal.
+      const { breakdown: _breakdown, ...q } = quote(DEMO_INTEGRATORS[0], input, DEMO_CORRIDOR_PRICING);
+      return c.json({ demo: true, quote: { ...q, kind: input.kind } });
+    });
+
   const v1 = new Hono<AppEnv>()
+    .route("/demo", demo)
     .route("/merchants/auth", auth.merchantAuthRoutes)
 
     // ---- Integrator endpoints (API key) ----------------------------------
-    .get("/corridors", requireIntegrator, (c) =>
-      c.json({
-        corridors: store.pricing.map(({ country }) => ({
-          country,
-          currency: COUNTRY_CATALOG[country].currency,
-          fiatDecimals: COUNTRY_CATALOG[country].fiatDecimals,
-          rails: COUNTRY_CATALOG[country].rails,
-          sides: ["buy", "sell"],
-          orderKinds: { buy: ["transfer"], sell: ["transfer", "qr_payment"] },
-        })),
-      }),
-    )
+    .get("/corridors", requireIntegrator, (c) => c.json({ corridors: corridorsOf(store.pricing) }))
     .post("/quotes", requireIntegrator, async (c) => {
       const input = await parseBody(c, quoteSchema);
       const { breakdown, ...q } = quote(integratorOf(c.get("actor")), input);
