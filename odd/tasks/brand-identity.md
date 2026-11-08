@@ -29,8 +29,10 @@ The current fonts are the same as another ramp product's, and the look does not 
   - Accept: SVGs are valid and render; the README covers the story, palette roles with contrast, type, graphic elements, co-branding, clear space and don'ts.
 - [x] **T2 web foundation** (`apps/web`): tokens in `global.css`, self-hosted fonts (`@fontsource/funnel-display`, `@fontsource/golos-text`, `@fontsource/sometype-mono`), logo component, favicon, Open Graph image.
   - Accept: `pnpm --filter @kalea/web typecheck` and `build` pass, and no reference to the old fonts remains.
-- [ ] **T3 landing restyle** (`apps/web/src/components/landing`, islands token usage).
-  - Accept: typecheck and build pass, and screenshots look right at desktop and phone width.
+- [x] **T3 landing frame**: Nav, Hero, Ticker, HowItWorks, FAQ, CTA, plus the shared ornaments and global styles.
+- [x] **T4 landing sections**: Coverage, Quote (section and widget), Merchants, Pricing, Footer, plus their ornaments.
+  - Accept (T3 and T4): typecheck and build pass on each slice, and screenshots look right at desktop and phone width.
+  - Split note: the landing restyle was written as one unit (671 changed lines) and sliced under the 400-line review budget. CTA and FAQ moved into T3 because their old markup depended on CSS that T3 removes (`grain`, `faq-icon` rotation). The final tree is identical to the unsplit version.
 
 ## Checks
 
@@ -44,7 +46,8 @@ The current fonts are the same as another ramp product's, and the look does not 
 |------|-------|--------|--------|
 | T1 | delegated writer (several non-trivial files) | see `git log feat/brand-identity-t1-assets` | done |
 | T2 | delegated writer (15+ files) | see `git log feat/brand-identity-t2-web-foundation` | done (parent re-ran typecheck: 0 errors) |
-| T3 | — | — | pending |
+| T3 | delegated writer, then parent slicing | see `git log feat/brand-identity-t3-landing-frame` | done (slice typecheck 0 errors, build complete) |
+| T4 | delegated writer, then parent slicing | see `git log feat/brand-identity-t4-landing-sections` | done (parent re-ran build: complete) |
 
 ### T1 evidence
 
@@ -65,6 +68,19 @@ The current fonts are the same as another ramp product's, and the look does not 
 - A search for old identity references (schibsted, jetbrains, the old hex values, color-coral, color-paper, lime-ink, googleapis) found no matches in `apps/web/src`.
 - Headless Chrome screenshots of `/` and `/app` show a Deep background, Apricot accents and buttons, Funnel Display headlines, Golos body text and Sometype Mono eyebrows. No black or lime is left.
 
+### T3 evidence
+
+- Route: delegated writer (13 landing/island files plus 7 new ornament components).
+- New ornaments in `apps/web/src/components/ornaments/` (all `aria-hidden` SVG except the plate): `StreetPerspective` (offset street, vanishing point 80% x / 12% y, road half-width 5%, white lines at 0.16 and 1.5 px, Apricot street with a street-flow dash), `StreetPlate` (HTML "<Country> kalea", mono, 10 px radius, 2.5 px border; demo = Ocean fill with white border, planned = quiet outline with an sr-only "(planned)"), `CityGrid`, `Skyline`, `Lane`, `StepBadge`, `HeroNumber`.
+- Section rhythm: Nav (always solid Deep, on-dark logo) → Hero (Deep, `min-h-[88svh]`, content centered, street plates for the 4 demo corridors then the 4 planned markets from `DEMO_COUNTRIES` / `COUNTRIES`) → Ticker (Deep-2, Apricot triangle separators) → How it works (white, building-cut cards on Surface, step badges 01 Ocean / 02 outline / 03 Apricot / 04 Deep, lanes Ocean, Ocean, Apricot) → Quote (Deep, white-label widget) → Coverage (Surface, city grid panel beside the copy on lg+) → Pricing (Surface, hero numbers, Integrator card featured in Ocean) → Merchants (white, building-cut cards) → FAQ (white, Ocean chevron) → CTA (dusk gradient plus faint perspective lines) → Footer (Deep, skyline band rising over the CTA).
+- Quote widget: neutral white/Surface surfaces, Ocean side toggle with white text, Ocean-tint active rail, tabular amounts, mono rate and fiat values, error text in `error`, and a "Powered by [mono mark] Kalea" footer in `muted` using `LogoMark tone="mono"`. No data logic changed.
+- Contrast: Apricot is never text on white or Surface (light eyebrows use the new `eyebrowLight`, which is Ocean); light-section body text is `ink/75`; Violet appears only in the dusk gradient.
+- Removed: hero wave paths, `wave`/`draw`/`drift`/`grain`/`rail-progress` CSS, the `data-solid` nav toggling and the `data-reveal="dim"`/`data-reveal-repeat` code paths (no remaining users). Added `.cut-tr`, `.dusk` and `.street-flow` (stopped by the reduced-motion rule).
+- `pnpm --filter @kalea/web typecheck`: 0 errors, 0 warnings, 0 hints (33 files).
+- `pnpm --filter @kalea/web build`: 2 pages built.
+- Screenshots (CDP full page, 900 px and 844 px viewports so `svh` is realistic): 1440 wide → 6069 px tall, scrollWidth 1440; 390 wide → 9516 px tall, scrollWidth 390 (no horizontal scroll). Two fixes after review: the CTA vanishing point moved below the buttons, and the hero lines are dimmed below lg, where the copy spans the full width (the street triangle is shown only at lg+).
+- The quote widget shows "—" in the screenshots because `client:visible` does not hydrate an island outside the captured viewport.
+
 ## Next step
 
-T3 landing restyle on `feat/brand-identity-t3-landing` (based on T2).
+Push the chain and open the PRs (T1 → T2 → T3) once the maintainer approves.
