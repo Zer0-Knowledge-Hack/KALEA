@@ -104,6 +104,7 @@ All prices and offers in the current code are demo data on testnet.
 - [Business model](docs/business-model.md)
 - [Architecture](docs/architecture.md)
 - [Order lifecycle](docs/order-lifecycle.md)
+- [Contributing](CONTRIBUTING.md)
 - [Contracts](contracts/README.md)
 - [Legacy prototype](legacy/README.md)
 
