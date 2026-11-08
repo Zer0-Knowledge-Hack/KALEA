@@ -1,7 +1,7 @@
 # Brand page
 
-- **Issue**: not opened yet. The user reviews the change locally first.
-- **Branch**: `feat/brand-page` (local only)
+- **Issue**: #35
+- **Branch**: `feat/brand-page`. Delivery: single PR with a size exception (user decision).
 
 ## Objective
 
