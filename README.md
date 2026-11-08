@@ -45,7 +45,7 @@ Architecture: [docs/architecture.md](docs/architecture.md).
 ```text
 KALEA/
 ├── apps/
-│   ├── web/        # Next.js 16 landing and app
+│   ├── web/        # Astro landing and merchant app (Preact islands)
 │   └── api/        # Hono API: quotes, orders, SEP-10 auth
 ├── packages/
 │   └── shared/     # Shared domain types and demo data
@@ -62,7 +62,6 @@ Requirements: Node.js 22 and pnpm (version pinned in `package.json`).
 ```sh
 pnpm install
 cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env.local
 pnpm dev          # web on :3000, api on :8787
 ```
 
@@ -81,8 +80,9 @@ Demo credentials use comma-separated `<id>:<value>` pairs:
 
 - API `INTEGRATOR_API_KEYS`: integrator id and raw API key (at least 24 characters), e.g. `int_wallet:<key>,int_payments:<key>`. Keys are hashed at startup.
 - API `MERCHANT_ACCOUNTS`: merchant id and the Stellar public key it signs SEP-10 challenges with, e.g. `mer_andes:G...,mer_rio:G...,mer_azteca:G...`.
-- Web `NEXT_PUBLIC_API_URL`: API base URL (default `http://localhost:8787`).
-- Web `KALEA_DEMO_INTEGRATOR_KEY`: server-only key used by the landing quote demo (`/api/demo-quote`). It never reaches the browser. Without it the demo falls back to local demo pricing.
+- Web `PUBLIC_API_URL`: API base URL, inlined at build time (default `http://localhost:8787`). Set it in the environment or in `apps/web/.env`.
+
+The web is a static Astro site; only the quote demo and the merchant dashboard ship JavaScript (Preact islands). The landing quote demo calls the API's public demo endpoints (`GET /v1/demo/corridors`, `POST /v1/demo/quote`), which are unauthenticated and rate limited per IP, so the web holds no integrator key. If the API is unreachable, the demo falls back to local demo pricing.
 
 CI (`.github/workflows/ci.yml`) runs `pnpm typecheck`, `pnpm test` and the web build on every pull request.
 

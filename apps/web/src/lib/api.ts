@@ -1,7 +1,8 @@
 import type { Order, OrderKind, Quote, Rail, Side, Country } from "@kalea/shared";
 import type { Corridor } from "./catalog";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8787";
+/** Kalea API base URL, inlined at build time from `PUBLIC_API_URL`. */
+export const API_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:8787";
 
 /** An error response from the Kalea API (`{ error: { code, message } }`). */
 export class ApiRequestError extends Error {
@@ -16,14 +17,13 @@ export class ApiRequestError extends Error {
 }
 
 interface RequestOptions extends Omit<RequestInit, "body"> {
-  /** Bearer credential: an integrator API key (server only) or a merchant JWT. */
+  /** Bearer credential: a merchant SEP-10 JWT. */
   auth?: string;
   body?: unknown;
-  baseUrl?: string;
 }
 
-export async function request<T>(path: string, { auth, body, baseUrl = API_URL, ...init }: RequestOptions = {}): Promise<T> {
-  const res = await fetch(`${baseUrl}${path}`, {
+export async function request<T>(path: string, { auth, body, ...init }: RequestOptions = {}): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -46,9 +46,6 @@ export interface QuoteRequest {
   amount: number;
   amountIn: "fiat" | "usdc";
 }
-
-/** `POST /v1/quotes` response: the end-user quote without the internal breakdown. */
-export type ApiQuote = Omit<Quote, "breakdown"> & { kind: OrderKind; integratorFeeUsdc: number };
 
 /** `GET /v1/merchants/me/orders` item: exact amounts plus the merchant's reward. */
 export type MerchantOrder = Omit<Order, "breakdown" | "integratorId" | "endUserRef"> & {
@@ -77,16 +74,16 @@ export interface MerchantSession {
   merchantId: string;
 }
 
-/** Quote shown in the landing demo; `source` tells whether it came from the API or local demo pricing. */
-export type DemoQuote = Pick<Quote, "side" | "country" | "fiatCurrency" | "rail" | "rate" | "fiatAmount" | "usdcAmount" | "expiresAt">;
-export type DemoSource = "live" | "demo";
+/** End-user quote shown in the landing demo: one all-in rate and exact amounts, no fee breakdown. */
+export type DemoQuote = Pick<Quote, "side" | "country" | "fiatCurrency" | "rail" | "rate" | "fiatAmount" | "usdcAmount" | "expiresAt"> & {
+  kind?: OrderKind;
+};
 
 export const api = {
-  // Integrator endpoints. The API key is a secret: call these only from server code.
-  integrator: {
-    corridors: (apiKey: string) => request<{ corridors: Corridor[] }>("/v1/corridors", { auth: apiKey, cache: "no-store" }),
-    quote: (apiKey: string, input: QuoteRequest) =>
-      request<{ quote: ApiQuote }>("/v1/quotes", { method: "POST", auth: apiKey, body: input, cache: "no-store" }),
+  // Public landing demo: unauthenticated and rate limited by the API, so the web holds no integrator key.
+  demo: {
+    corridors: () => request<{ corridors: Corridor[] }>("/v1/demo/corridors"),
+    quote: (input: QuoteRequest) => request<{ demo: true; quote: DemoQuote }>("/v1/demo/quote", { method: "POST", body: input }),
   },
 
   // Merchant (LP) endpoints, authenticated with a SEP-10 JWT.
@@ -96,12 +93,5 @@ export const api = {
     token: (transaction: string) => request<MerchantSession>("/v1/merchants/auth/token", { method: "POST", body: { transaction } }),
     orders: (token: string) => request<{ orders: MerchantOrder[] }>("/v1/merchants/me/orders", { auth: token }),
     rewards: (token: string) => request<MerchantRewards>("/v1/merchants/me/rewards", { auth: token }),
-  },
-
-  // Landing demo, proxied by this Next app (src/app/api/demo-quote/route.ts) so no key reaches the browser.
-  demo: {
-    corridors: () => request<{ corridors: Corridor[]; source: DemoSource }>("/api/demo-quote", { baseUrl: "" }),
-    quote: (input: QuoteRequest) =>
-      request<{ quote: DemoQuote; source: DemoSource }>("/api/demo-quote", { method: "POST", body: input, baseUrl: "" }),
   },
 };
