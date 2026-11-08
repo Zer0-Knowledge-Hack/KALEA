@@ -4,7 +4,7 @@
  */
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-// Header: solid once scrolled, hidden while scrolling down past the hero, always shown with the menu open.
+// Header: hidden while scrolling down past the hero, always shown with the menu open.
 const header = document.getElementById("site-nav");
 const toggle = document.getElementById("nav-toggle");
 const menu = document.getElementById("nav-menu");
@@ -15,12 +15,10 @@ if (header && toggle && menu) {
     open = next;
     toggle.setAttribute("aria-expanded", String(open));
     menu.hidden = !open;
-    header.toggleAttribute("data-solid", open || scrollY > 24);
     if (open) header.classList.remove("nav-hidden");
   };
   const onScroll = () => {
     header.classList.toggle("nav-hidden", !open && scrollY > 240 && scrollY > lastY);
-    header.toggleAttribute("data-solid", open || scrollY > 24);
     lastY = scrollY;
   };
   addEventListener("scroll", onScroll, { passive: true });
@@ -43,7 +41,7 @@ function countUp(el: HTMLElement) {
   requestAnimationFrame(step);
 }
 
-// Reveal on scroll. `data-reveal-repeat` toggles both ways (how-it-works steps); others reveal once.
+// Reveal on scroll, once.
 const observer = new IntersectionObserver(
   (entries) => {
     for (const { target, isIntersecting } of entries) {
@@ -52,8 +50,7 @@ const observer = new IntersectionObserver(
         if (isIntersecting) { observer.unobserve(el); if (!reduceMotion) countUp(el); }
         continue;
       }
-      if (el.hasAttribute("data-reveal-repeat")) el.classList.toggle("in", isIntersecting);
-      else if (isIntersecting) { el.classList.add("in"); observer.unobserve(el); }
+      if (isIntersecting) { el.classList.add("in"); observer.unobserve(el); }
     }
   },
   { threshold: 0.3 },
