@@ -1,6 +1,6 @@
 ---
 import { DEFAULT_MERCHANT_REWARD_BPS } from "@kalea/shared";
-import { eyebrow } from "./styles";
+import { eyebrowLight } from "./styles";
 
 const rewardPct = DEFAULT_MERCHANT_REWARD_BPS / 100;
 const pillars = [
@@ -11,22 +11,24 @@ const pillars = [
 ];
 ---
 
-<section id="merchants" class="mx-auto max-w-6xl px-4 py-28 sm:px-6">
-  <p class={eyebrow}>For merchants / liquidity providers</p>
-  <h2 class="mt-4 max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">Provide liquidity. Earn on every order.</h2>
-  <div class="mt-14 grid gap-4 sm:grid-cols-2">
-    {pillars.map(([t, d], i) => (
-      <div
-        data-reveal
-        data-spotlight
-        style={`--from:scale(.94);--delay:${i * 0.08}s`}
-        class="rounded-3xl border border-line bg-[radial-gradient(320px_circle_at_var(--x,-999px)_var(--y,-999px),rgba(200,242,58,.12),transparent_60%)] p-6 transition-colors hover:border-lime/40 sm:p-7"
-      >
-        <span class="font-mono text-xs text-lime">0{i + 1}</span>
-        <h3 class="mt-6 text-xl font-semibold">{t}</h3>
-        <p class="mt-2 text-sm leading-relaxed text-soft">{d}</p>
-      </div>
-    ))}
+<section id="merchants" class="bg-white text-ink">
+  <div class="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-28">
+    <p class={eyebrowLight}>For merchants / liquidity providers</p>
+    <h2 class="mt-4 max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">Provide liquidity. Earn on every order.</h2>
+    <div class="mt-14 grid gap-4 sm:grid-cols-2">
+      {pillars.map(([t, d], i) => (
+        <div
+          data-reveal
+          data-spotlight
+          style={`--from:scale(.94);--delay:${i * 0.08}s`}
+          class="cut-tr bg-surface bg-[radial-gradient(320px_circle_at_var(--x,-999px)_var(--y,-999px),rgba(30,87,143,.10),transparent_60%)] p-6 sm:p-7"
+        >
+          <span class="font-mono text-xs text-ocean">0{i + 1}</span>
+          <h3 class="mt-6 text-xl font-semibold">{t}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-ink/75">{d}</p>
+        </div>
+      ))}
+    </div>
+    <a href="/app" class="mt-10 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-ocean hover:underline">Merchant dashboard →</a>
   </div>
-  <a href="/app" class="mt-10 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-[0.14em] text-soft hover:text-lime">Merchant dashboard →</a>
 </section>

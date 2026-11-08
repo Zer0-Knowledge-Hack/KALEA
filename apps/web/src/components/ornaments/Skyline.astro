@@ -1,0 +1,57 @@
+---
+/**
+ * Skyline band: building silhouettes with chamfered tops (cut from the mark), with an occasional
+ * Apricot street between them. Decorative only; anchor it to the top edge of a Deep footer.
+ */
+interface Props {
+  class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+
+const W = 1440;
+const H = 120;
+const widths = [70, 46, 92, 58, 80, 40, 66, 100, 52, 74];
+const heights = [78, 104, 64, 92, 70, 112, 84, 60, 98, 72];
+
+type Building = { points: string };
+type Street = { points: string };
+
+/** One building; `cutLeft` chooses which top corner is chamfered. */
+function building(x: number, w: number, h: number, cutLeft: boolean): Building {
+  const top = H - h;
+  const c = Math.min(w * 0.4, 22);
+  const pts = cutLeft
+    ? [[x, H], [x, top + c], [x + c, top], [x + w, top], [x + w, H]]
+    : [[x, H], [x, top], [x + w - c, top], [x + w, top + c], [x + w, H]];
+  return { points: pts.map((p) => p.join(",")).join(" ") };
+}
+
+function row(offset: number, scale: number, gap: number, streets: boolean) {
+  const out: Building[] = [];
+  const roads: Street[] = [];
+  let x = -20;
+  let i = offset;
+  while (x < W + 20) {
+    const w = widths[i % widths.length];
+    const h = heights[(i * 3) % heights.length] * scale;
+    out.push(building(x, w, h, i % 2 === 0));
+    x += w + gap;
+    if (streets && i % 5 === 4) {
+      roads.push({ points: `${x + 14},${H - 40} ${x + 26},${H} ${x + 2},${H}` });
+      x += 28;
+    }
+    i++;
+  }
+  return { out, roads };
+}
+
+const back = row(3, 1, 4, false);
+const front = row(0, 0.62, 6, true);
+---
+
+<svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMax slice" class:list={["pointer-events-none", className]} aria-hidden="true" focusable="false">
+  {back.out.map((b) => <polygon points={b.points} fill="#1A3A59" />)}
+  {front.out.map((b) => <polygon points={b.points} fill="#102941" />)}
+  {front.roads.map((r) => <polygon points={r.points} fill="#EE9E4F" />)}
+</svg>
