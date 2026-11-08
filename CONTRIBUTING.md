@@ -21,6 +21,7 @@ Pull requests that skip step 1 may be closed without review, even if the code is
 | Kalea never holds local fiat. Never claim "no custody" or that anyone is "not responsible" | Legal wording must stay accurate. The escrow contract holds USDC |
 | No funding-application or grant material in the repository | The project stands on its own |
 | Never commit secrets. Only `.env.example` files are tracked | Use the examples as templates for your local `.env` |
+| No AI attribution or Co-Authored-By trailers in commits or PRs | Conventional Commits only; human ownership and clean git provenance |
 | One order lifecycle everywhere | [docs/order-lifecycle.md](docs/order-lifecycle.md) is canonical for docs, types, API and web |
 
 ## Setup
@@ -65,6 +66,7 @@ Mention the red step in the PR. Docs-only changes have no test step; check headi
 - Use Conventional Commits: `feat(api): ...`, `fix(shared): ...`, `docs: ...`, `chore: ...`. Use the package name as the scope.
 - Each commit is one coherent work unit, with its tests and docs alongside the behavior.
 - Do not mix unrelated changes, formatting sweeps or dependency bumps into a feature commit.
+- **Never add "Co-Authored-By" or AI attribution** (Claude, Cursor, Antigravity, ChatGPT, Copilot, etc.) to commit messages or PR descriptions. CI blocks any pull request containing AI co-authorship trailers.
 
 ### Package notes
 
