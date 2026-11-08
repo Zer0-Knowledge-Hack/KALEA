@@ -10,13 +10,14 @@ import RoadArrow from "../ornaments/RoadArrow.astro";
 import Skyline from "../ornaments/Skyline.astro";
 import { useTranslations, type Locale } from "../../i18n";
 import { container, eyebrowLight, h2, sectionY } from "../landing/styles";
-import { asset, downloadLink } from "./assets";
+import { asset, downloadLink, pngAsset } from "./assets";
 
 interface Props {
   locale: Locale;
 }
 
-const t = useTranslations(Astro.props.locale).brand.elements;
+const brand = useTranslations(Astro.props.locale).brand;
+const t = brand.elements;
 const files = [
   { key: "perspective", file: "street-perspective.svg", bg: "bg-deep", img: "h-full w-full object-cover", w: 1200, h: 630 },
   { key: "pattern", file: "crown-pattern-tile.svg", bg: "bg-ocean", img: "size-28", w: 112, h: 112 },
@@ -47,8 +48,12 @@ const preview = "flex h-44 items-center justify-center overflow-hidden";
             <div class="flex flex-1 flex-col gap-2 p-5">
               <p class="font-display text-lg font-semibold tracking-tight">{copy.name}</p>
               <p class="text-sm text-ink/75">{copy.use}</p>
-              <p class="mt-auto pt-2 text-ocean">
-                <a href={asset(f.file)} download={f.file} class={downloadLink}>{t.download}</a>
+              <p class="mt-auto flex items-baseline gap-4 border-t border-line pt-3 text-sm print:hidden">
+                <span class="text-ink/75">{t.download}</span>
+                <span class="flex gap-4 text-ocean">
+                  <a href={asset(f.file)} download={f.file} aria-label={`${copy.name} · ${brand.logo.svg}`} class={downloadLink}>{brand.logo.svg}</a>
+                  <a href={pngAsset(f.file)} download={f.file.replace(/\.svg$/, ".png")} aria-label={`${copy.name} · ${brand.logo.png}`} class={downloadLink}>{brand.logo.png}</a>
+                </span>
               </p>
             </div>
           </li>

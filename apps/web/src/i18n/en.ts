@@ -194,7 +194,10 @@ export const en = {
       eyebrow: "Brand guidelines",
       headline: "Using the Kalea brand.",
       sub: "For partners, integrators and anyone writing about Kalea: which logo to use, which colors and fonts to apply, and the few rules that keep the brand recognizable.",
-      downloads: "Every logo and element on this page links to its SVG file. Download the file you need instead of redrawing it.",
+      downloads: "Every logo and element on this page links to its SVG and PNG files. Download the file you need instead of redrawing it, or take the whole kit.",
+      downloadGuide: "Download guide (PDF)",
+      downloadKit: "Download brand kit (ZIP)",
+      kitContents: "Logos and elements in SVG and PNG, tokens.json and this guide as PDF in English, Spanish and Portuguese.",
     },
     story: {
       eyebrow: "The idea",
@@ -223,6 +226,7 @@ export const en = {
       markFile: "Mark",
       iconFile: "App icon",
       svg: "SVG",
+      png: "PNG",
       variants: {
         default: {
           name: "Default",
@@ -293,7 +297,7 @@ export const en = {
         arrows: { name: "Road-marking arrows", use: "Bold directional arrows for steps and calls to action." },
         highlight: { name: "Street highlight and lanes", use: "An Apricot bar or a dashed lane under one key word. The word keeps its own color.", sample: "one key word" },
       },
-      download: "Download SVG",
+      download: "Download",
     },
     rules: {
       eyebrow: "Do and don't",

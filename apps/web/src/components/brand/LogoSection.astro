@@ -2,7 +2,7 @@
 /** Logo: mark and lockup, clear space and minimum sizes, then every variant on its own background with downloads. */
 import { useTranslations, type Locale } from "../../i18n";
 import { container, eyebrowLight, h2, sectionY } from "../landing/styles";
-import { LOGO_VARIANTS, asset, downloadLink } from "./assets";
+import { LOGO_VARIANTS, asset, downloadLink, pngAsset } from "./assets";
 
 interface Props {
   locale: Locale;
@@ -74,13 +74,22 @@ const fileLabels = { lockup: t.lockupFile, mark: t.markFile, icon: t.iconFile } 
             <div class="flex flex-1 flex-col gap-3 p-5">
               <p class="font-display text-lg font-semibold tracking-tight">{copy.name}</p>
               <p class="text-sm text-ink/75">{copy.use}</p>
-              <p class="mt-auto flex flex-wrap gap-x-5 gap-y-2 pt-2 text-ocean">
-                {Object.entries(v.files).map(([kind, file]) => (
-                  <a href={asset(file)} download={file} class={downloadLink}>
-                    {fileLabels[kind as keyof typeof fileLabels]} · {t.svg}
-                  </a>
-                ))}
-              </p>
+              <!-- One row per file: its name, then the SVG and PNG downloads (PNG: transparent, 1024 px). -->
+              <ul class="mt-auto space-y-2 border-t border-line pt-3 print:hidden">
+                {Object.entries(v.files).map(([kind, file]) => {
+                  const label = fileLabels[kind as keyof typeof fileLabels];
+                  const png = file.replace(/\.svg$/, ".png");
+                  return (
+                    <li class="flex items-baseline justify-between gap-4">
+                      <span class="text-sm text-ink/75">{label}</span>
+                      <span class="flex gap-4 text-ocean">
+                        <a href={asset(file)} download={file} aria-label={`${label} · ${t.svg}`} class={downloadLink}>{t.svg}</a>
+                        <a href={pngAsset(file)} download={png} aria-label={`${label} · ${t.png}`} class={downloadLink}>{t.png}</a>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           </li>
         );

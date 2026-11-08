@@ -18,7 +18,9 @@ const t = useTranslations(Astro.props.locale).brand.contact;
     <p class={eyebrow}>{t.eyebrow}</p>
     <h2 class="mt-5 text-[2.5rem] font-bold leading-[1.02] tracking-tight sm:text-6xl">{t.headline}</h2>
     <p class="mx-auto mt-6 max-w-xl text-lg text-deep-soft">{t.sub}</p>
-    <div class="mt-10 flex justify-center">
+    <!-- On paper the button becomes the plain address. -->
+    <p class="mt-8 hidden font-mono text-sm print:block">{CONTACT_URL}</p>
+    <div class="mt-10 flex justify-center print:hidden">
       <a href={CONTACT_URL} class={btnPrimary}>
         <RoadArrow kind="turn" class="size-5" /> {t.cta}
       </a>

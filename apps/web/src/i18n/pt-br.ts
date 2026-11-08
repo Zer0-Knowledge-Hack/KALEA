@@ -190,7 +190,10 @@ export const ptBr: Dictionary = {
       eyebrow: "Guia de marca",
       headline: "Como usar a marca Kalea.",
       sub: "Para parceiros, integradores e quem escreve sobre a Kalea: qual logo usar, quais cores e fontes aplicar e as poucas regras que mantêm a marca reconhecível.",
-      downloads: "Cada logo e elemento desta página leva ao seu arquivo SVG. Baixe o arquivo de que você precisa em vez de redesenhá-lo.",
+      downloads: "Cada logo e elemento desta página leva aos seus arquivos SVG e PNG. Baixe o arquivo de que você precisa em vez de redesenhá-lo, ou leve o kit completo.",
+      downloadGuide: "Baixar guia (PDF)",
+      downloadKit: "Baixar kit de marca (ZIP)",
+      kitContents: "Logos e elementos em SVG e PNG, tokens.json e este guia em PDF em inglês, espanhol e português.",
     },
     story: {
       eyebrow: "A ideia",
@@ -219,6 +222,7 @@ export const ptBr: Dictionary = {
       markFile: "Símbolo",
       iconFile: "Ícone de app",
       svg: "SVG",
+      png: "PNG",
       variants: {
         default: {
           name: "Principal",
@@ -289,7 +293,7 @@ export const ptBr: Dictionary = {
         arrows: { name: "Setas de sinalização", use: "Setas direcionais marcantes para etapas e chamadas para ação." },
         highlight: { name: "Realce de rua e faixas", use: "Uma barra Apricot ou uma faixa tracejada sob uma palavra-chave. A palavra mantém a própria cor.", sample: "uma palavra-chave" },
       },
-      download: "Baixar SVG",
+      download: "Baixar",
     },
     rules: {
       eyebrow: "O que fazer e o que evitar",

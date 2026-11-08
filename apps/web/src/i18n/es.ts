@@ -189,7 +189,10 @@ export const es: Dictionary = {
       eyebrow: "Guía de marca",
       headline: "Cómo usar la marca Kalea.",
       sub: "Para socios, integradores y cualquier persona que escriba sobre Kalea: qué logo usar, qué colores y fuentes aplicar, y las pocas reglas que mantienen la marca reconocible.",
-      downloads: "Cada logo y elemento de esta página enlaza a su archivo SVG. Descarga el archivo que necesitas en lugar de redibujarlo.",
+      downloads: "Cada logo y elemento de esta página enlaza a sus archivos SVG y PNG. Descarga el archivo que necesitas en lugar de redibujarlo, o llévate el kit completo.",
+      downloadGuide: "Descargar guía (PDF)",
+      downloadKit: "Descargar kit de marca (ZIP)",
+      kitContents: "Logos y elementos en SVG y PNG, tokens.json y esta guía en PDF en inglés, español y portugués.",
     },
     story: {
       eyebrow: "La idea",
@@ -218,6 +221,7 @@ export const es: Dictionary = {
       markFile: "Símbolo",
       iconFile: "Ícono de app",
       svg: "SVG",
+      png: "PNG",
       variants: {
         default: {
           name: "Principal",
@@ -288,7 +292,7 @@ export const es: Dictionary = {
         arrows: { name: "Flechas de señalización vial", use: "Flechas direccionales marcadas para pasos y llamados a la acción." },
         highlight: { name: "Resaltado de calle y carriles", use: "Una barra Apricot o un carril punteado bajo una palabra clave. La palabra conserva su color.", sample: "una palabra clave" },
       },
-      download: "Descargar SVG",
+      download: "Descargar",
     },
     rules: {
       eyebrow: "Qué hacer y qué no",
