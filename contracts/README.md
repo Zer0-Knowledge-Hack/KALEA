@@ -1,88 +1,43 @@
-# Contratos Soroban
+# Soroban contracts
 
-## `escrow`: escrow de USDC por orden
+> **Status:** `escrow/` v0 is implemented, tested (33 tests) and deployed on testnet ([deployments/testnet.md](deployments/testnet.md)). It does not yet match the canonical lifecycle below; see [Gaps](#gaps-between-escrow-v0-and-the-canonical-lifecycle).
 
-KALEA es infraestructura de pagos P2P B2B: las apps nos integran, sus usuarios en Bolivia pagan en bolivianos
-(QR Simple o transferencia) a un socio local verificado, y la liquidación ocurre en USDC sobre Stellar. Este contrato
-custodia el USDC de cada orden mientras el pago en BOB ocurre fuera de la cadena. KALEA nunca es contraparte.
+## Planned: per-order USDC escrow
 
-### Roles
+- One escrow per order, in Stellar USDC.
+- Fixed amounts set when the order is created.
+- Configurable timeouts: refund to the depositor when an order expires before fiat is marked sent.
+- On release, splits the locked amount between the recipient, the merchant reward vault and the insurance fund.
+- Freezes on dispute until resolved.
 
-| Rol | Quién es | Puede |
-|---|---|---|
-| Depositante | Socio local (pay-in) o la app (pay-out) | `create`, `release` |
-| Beneficiario | La app (pay-in) o el socio local (pay-out) | `dispute`, `cancel` |
-| Árbitro | Cuenta de resolución de KALEA | `resolve` |
-| Admin | Multisig de KALEA | `set_fee`, `set_paused`, `set_arbiter`, `set_treasury`, `propose_admin`, `upgrade` |
-| Cualquiera | — | `refund` de una orden vencida y sin disputa (solo puede devolver al depositante) |
+## Planned: merchant reward vault
 
-### Estados
+- Receives merchant rewards on release.
+- Locks rewards in 7-day cycles before withdrawal (fraud buffer and retention).
 
-```
-create ──► Locked ──release──────────────► Released (beneficiario recibe monto − comisión)
-             │  ├──cancel (beneficiario)──► Refunded (depositante recibe todo)
-             │  └──refund (al vencer)─────► Refunded
-             └──dispute (antes de vencer)─► Disputed ──resolve(true) / release──► Released
-                                                     └─resolve(false)────────────► Refunded
-```
+## Planned: insurance fund
 
-**Solo quien recibe los bolivianos puede liberar.** Si no lo hace, el beneficiario abre una disputa antes del
-vencimiento y decide el árbitro. Sin disputa, la orden vence y los fondos vuelven al depositante.
+- Receives about 0.1% per order.
+- Covers losses from resolved disputes.
 
-### Seguridad
+The lifecycle these contracts enforce is defined in [docs/order-lifecycle.md](../docs/order-lifecycle.md).
 
-- Cada acción exige la firma (`require_auth`) del rol correspondiente.
-- Máquina de estados estricta: `Released` y `Refunded` son finales, así que una orden se liquida una sola vez.
-- El estado se guarda antes de transferir (checks-effects-interactions).
-- La comisión se fija al crear la orden, con un tope de 1 % (`MAX_FEE_BPS`). Cambiarla no afecta las órdenes abiertas.
-  Si la orden se devuelve, no se cobra comisión.
-- La pausa solo frena órdenes nuevas: liberar, cancelar, devolver y resolver siguen funcionando, así que los fondos
-  nunca quedan trabados.
-- Se acepta un solo token (USDC), fijado en el constructor. No existe un `init` que un tercero pueda ejecutar antes.
-- La referencia externa (el id de la orden en el API) es única: no puede haber dos escrows para la misma orden.
-- Toda la aritmética verifica desbordamientos, también en el perfil release (`overflow-checks = true`).
-- El traspaso de admin es en dos pasos (propuesta y aceptación).
-- Se extiende el TTL de la instancia y de cada orden para que el almacenamiento no expire mientras hay fondos.
-- Vencimiento permitido: entre 5 minutos y 7 días.
+## Implemented: `escrow` v0
 
-### Tests
+Generic per-order escrow: a depositor locks USDC for a beneficiary while fiat moves off-chain.
+
+- `create` (depositor), `release` (depositor, i.e. the fiat recipient), `cancel` (beneficiary), `dispute` (beneficiary), `resolve` (arbiter), `refund` (anyone, after expiry, only back to the depositor).
+- Security: `require_auth` per role, terminal states, state saved before transfers, fee fixed per order with a 1% cap, pause blocks only new orders, single token set in the constructor, unique external reference, checked arithmetic (also in release), two-step admin transfer.
+- 33 tests, including a fund-conservation invariant, plus a mutation check: removing each of 7 security controls makes the suite fail.
 
 ```bash
 cargo test
-```
-
-Son 33 tests y cubren:
-- los flujos pay-in y pay-out completos;
-- las disputas en ambos sentidos;
-- los vencimientos en sus límites exactos;
-- referencias duplicadas y reversión sin dejar rastro;
-- llamadas sin firmas y con la firma equivocada (por ejemplo, el beneficiario intentando liberarse a sí mismo o el
-  depositante resolviendo su propia disputa);
-- la pausa y la administración;
-- el redondeo y el desbordamiento de la comisión;
-- un invariante de conservación de fondos sobre 20 órdenes mixtas.
-
-Además pasamos una prueba de mutación: se quitaron por separado 7 controles de seguridad y la suite falló en todos
-los casos. Los controles quitados fueron:
-- la firma en `release`;
-- el vencimiento en `refund`;
-- el estado final;
-- la firma del árbitro;
-- el tope de comisión;
-- la referencia única;
-- la pausa que no traba fondos.
-
-### Compilar y desplegar (testnet)
-
-```bash
 stellar contract build
 ```
 
-```bash
-stellar contract deploy --wasm target/wasm32v1-none/release/kalea_escrow.wasm --source <cuenta> --network testnet -- --admin <G…> --arbiter <G…> --treasury <G…> --token <contrato USDC> --fee_bps 50
-```
+## Gaps between escrow v0 and the canonical lifecycle
 
-Desplegado en testnet: ver [deployments/testnet.md](deployments/testnet.md).
-
-Pendiente antes de mainnet: auditoría externa, admin y árbitro como multisig, y monitoreo de los eventos `Created`,
-`Released`, `Refunded`, `Disputed` y `ConfigChanged`.
+1. No `fiat_sent` state. v0 has no "mark paid" step, so the `payment_timeout` refund and the "never auto-refund after fiat is sent" rule are not enforced.
+2. Release split. v0 pays recipient + a Kalea fee to a treasury. Canonical: recipient + merchant reward (reward vault) + insurance fund, with fixed amounts set at creation. The Kalea fee is debited from the integrator balance, not from the escrow.
+3. Disputes. v0 lets only the beneficiary dispute, before expiry, from `Locked`. Canonical: either party disputes from `fiat_sent`, and `confirmation_timeout` moves the order to `disputed`.
+4. The merchant reward vault (7-day cycles) and the insurance fund contracts are not implemented.
