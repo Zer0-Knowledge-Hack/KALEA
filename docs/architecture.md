@@ -30,13 +30,48 @@ flowchart LR
 | --- | --- | --- |
 | Integrator API / SDK | Quotes, orders, balance, webhooks. Scoped per integrator | Planned (`/v1`) |
 | Matching and pricing engine | Picks a merchant for each order. Prices per country and side over a reference rate: buy = mid + markup, sell = mid - discount | Planned |
-| Soroban order escrow | One escrow per order in Stellar USDC. Fixed amounts, configurable timeouts, fee/reward/insurance split on release, refund on timeout | Planned ([contracts](../contracts/README.md)) |
+| Soroban order escrow (`kalea-escrow`) | One escrow per order in Stellar USDC. Fixed amounts, configurable timeouts, fee/reward/insurance split on release, refund on timeout | In development (PR #5) ([contracts](../contracts/README.md)) |
 | Merchant reward vault | Holds rewards in 7-day cycles before merchants can withdraw | Planned |
 | Insurance fund | Receives ~0.1% per order; covers losses from resolved disputes | Planned |
 | Disputes | Freezes the escrow, collects evidence, resolves to release or refund | Planned |
 | Identity port | KYC/liveness and social-proof providers behind one interface | Planned |
 | Wallet / auth port | Wallet and account provider behind one interface | Planned |
 | Prefunded balance ledger | Integrator USDC balances and per-order fee debits | Planned |
+
+## P2P B2B Architecture: Stellar vs. EVM Alternatives
+
+Kalea builds B2B fiat <-> USDC clearing infrastructure optimized for **Stellar and Soroban** rather than EVM-based networks.
+
+| Dimension | EVM Solutions | Kalea on Stellar (Soroban) |
+| :--- | :--- | :--- |
+| **User Onboarding** | Requires Account Abstraction (ERC-4337) and deploying smart contract proxy wallets (EIP-1167) per user. | Native ed25519 accounts (Freighter, mobile wallets); no contract proxy needed. |
+| **Fee Sponsorship** | Complex Paymaster contracts burning volatile ETH/gas. | Native Fee-Bump Transactions ([CAP-0015](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0015.md)); relayer wraps transaction and pays XLM base fee. |
+| **Settlement Finality** | Probabilistic or L2 batch-submission delays; vulnerable to block reorganizations. | Deterministic 5-second ledger consensus without reorgs; instant clearing certainty. |
+| **Token Standard** | ERC-20 with allowance/permit approval steps. | Stellar Asset Contract (SAC / SEP-41) with unified Soroban interop. |
+| **Contract Footprint** | Bloated state often storing off-chain metadata on-chain. | Strict off-chain/on-chain boundary; Soroban storage TTL minimized per order. |
+
+## Strict Boundaries: Off-Chain vs. On-Chain
+
+To maintain high throughput, low latency, and minimal gas costs, Kalea enforces a strict division of responsibility:
+
+### Off-Chain (API & Shared Domain)
+- **Order Matching & Routing**: Selecting the best-rated merchant with sufficient capacity (`selectMerchant` in `packages/shared/src/domain.ts`).
+- **Reputation & Scoring**: Tracking merchant ratings, volume limits, and completion rates.
+- **Corridor Pricing Engine**: Fetching live reference market mid-rates and computing spreads, markups, and discounts.
+- **Integrator Fee Accounting**: Debiting the Kalea protocol fee directly from the integrator's prefunded USDC balance.
+- **Proof & Evidence Collection**: Managing fiat payment receipts, webhooks, and dispute evidence payloads.
+
+### On-Chain (`kalea-escrow` Soroban Contract)
+- **Atomic Fund Locking**: Non-custodial lock of Stellar USDC for an order.
+- **Enforced Timeouts**: Expiration refunds if fiat is not sent within the payment timeout.
+- **State Settlement**: Enforcing terminal states (`Released`, `Cancelled`, `Expired`) and freeze on `Disputed`.
+- **Atomic Split on Release**: Distributing USDC in a single transaction to the recipient, the 7-day merchant reward vault (1.5%), and the insurance fund (~0.1%).
+
+## Gasless UX: Fee Sponsorship & Pollar Status
+
+- **Protocol Mechanism**: Stellar's native Fee-Bump Transactions (CAP-0015) allow a designated relayer to pay network fees while the user signs with their own key.
+- **Pollar (`pollar.xyz`)**: Planned relayer infrastructure to sponsor contract transitions (`lock`, `mark_fiat_sent`, `release`, `cancel`, `expire`) so end users and merchants never need XLM.
+- **Current Status**: **Planned / Architectural Design**. Pollar integration is specified for production rollout and is out-of-scope for the foundational MVP codebase (see `odd/tasks/b2b-latam-ramp.md`). The Soroban contract and API signatures are designed to be transparently enveloped by fee-bump relayers without modifying contract business logic.
 
 ## Authentication
 
