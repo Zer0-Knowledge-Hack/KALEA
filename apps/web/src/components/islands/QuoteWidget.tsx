@@ -1,31 +1,20 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import type { Country, Rail, Side } from "@kalea/shared";
+import type { Dictionary } from "../../i18n/en";
+import { fill } from "../../i18n/format";
 import { ApiRequestError, api, type DemoQuote, type QuoteRequest } from "../../lib/api";
 import { LogoMark } from "../logo";
-import { COUNTRY_NAMES, RAIL_NAMES, fallbackCorridors, formatFiat, formatNumber, localDemoQuote, type Corridor } from "../../lib/catalog";
+import { fallbackCorridors, formatFiat, formatNumber, localDemoQuote, type Corridor } from "../../lib/catalog";
 
-/** User-visible strings, kept together for translation. */
-const t = {
-  side: { buy: "On-ramp", sell: "Off-ramp" } as Record<Side, string>,
-  direction: "Direction",
-  country: "Country",
-  rail: "Rail",
-  pays: "End user pays",
-  receives: "End user receives",
-  sends: "End user sends",
-  rate: "All-in rate",
-  fiatPaid: "Fiat paid",
-  fiatReceived: "Fiat received",
-  fee: "Kalea fee to end user",
-  none: "None",
-  amountIn: (currency: string) => `Amount in ${currency}`,
-  invalid: "Enter a valid amount.",
-  unavailable: "Quote unavailable",
-  rateLimited: "Too many quotes in a short time, showing local demo pricing.",
-  sourceLive: "Live quote · testnet demo API",
-  sourceDemo: "Demo pricing · illustrative values",
-  poweredBy: "Powered by",
-};
+interface Props {
+  /** Localized widget strings, passed from the page (src/i18n). */
+  t: Dictionary["quoteWidget"];
+  /** Intl tag for number and currency formatting (en-US, es-419, pt-BR). */
+  intl: string;
+  /** Display names per locale; the API values (country codes, rail ids) never change. */
+  countries: Record<Country, string>;
+  rails: Record<Rail, string>;
+}
 
 /** Where the shown quote came from: the API's public demo endpoint, or local demo pricing. */
 type Source = "live" | "demo";
@@ -36,14 +25,14 @@ function Rolling({ value }: { value: string }) {
 }
 
 /** Live quote from the public demo endpoint; falls back to local demo pricing when the API is unreachable or rate limited. */
-async function fetchQuote(input: QuoteRequest): Promise<{ quote: DemoQuote; source: Source; notice: string | null }> {
+async function fetchQuote(input: QuoteRequest): Promise<{ quote: DemoQuote; source: Source; rateLimited: boolean }> {
   try {
     const { quote } = await api.demo.quote(input);
-    return { quote, source: "live", notice: null };
+    return { quote, source: "live", rateLimited: false };
   } catch (e) {
     if (e instanceof ApiRequestError && e.status === 400) throw e;
-    const notice = e instanceof ApiRequestError && e.status === 429 ? t.rateLimited : null;
-    return { quote: localDemoQuote(input), source: "demo", notice };
+    const rateLimited = e instanceof ApiRequestError && e.status === 429;
+    return { quote: localDemoQuote(input), source: "demo", rateLimited };
   }
 }
 
@@ -54,7 +43,7 @@ const tab = (on: boolean) =>
   `-mb-px border-b-2 transition-colors ${on ? "border-ocean text-ink" : "border-transparent text-ink/70 hover:text-ink"}`;
 
 /** Corridor quote demo: one all-in price for the end user, from the API's public demo endpoint. */
-export default function QuoteWidget() {
+export default function QuoteWidget({ t, intl, countries, rails }: Props) {
   const [corridors, setCorridors] = useState<Corridor[]>(fallbackCorridors);
   const [country, setCountry] = useState<Country>(corridors[0]?.country ?? "BO");
   const [side, setSide] = useState<Side>("buy");
@@ -79,11 +68,11 @@ export default function QuoteWidget() {
     let cancelled = false;
     const timer = setTimeout(() => {
       fetchQuote({ country: corridor.country, side, rail: activeRail, amount: fiatAmount, amountIn: "fiat" })
-        .then((r) => { if (!cancelled) { setQuote(r.quote); setSource(r.source); setNotice(r.notice); setError(null); } })
+        .then((r) => { if (!cancelled) { setQuote(r.quote); setSource(r.source); setNotice(r.rateLimited ? t.rateLimited : null); setError(null); } })
         .catch((e) => { if (!cancelled) { setQuote(null); setError(e instanceof Error ? e.message : t.unavailable); } });
     }, 250);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [corridor, side, activeRail, fiatAmount, valid]);
+  }, [corridor, side, activeRail, fiatAmount, valid, t]);
 
   const currency = corridor?.currency ?? "USD";
   const decimals = corridor?.fiatDecimals ?? 2;
@@ -96,25 +85,25 @@ export default function QuoteWidget() {
       <div role="group" aria-label={t.direction} class="flex gap-8 border-b border-line px-6 pt-5 sm:px-8">
         {(["buy", "sell"] as Side[]).map((s) => (
           <button key={s} type="button" onClick={() => setSide(s)} aria-pressed={side === s} class={`${tab(side === s)} pb-3.5 text-[15px] font-semibold`}>
-            {t.side[s]}
+            {s === "buy" ? t.buy : t.sell}
           </button>
         ))}
       </div>
 
       <div class="px-6 sm:px-8">
-        <label class={`${row} grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-4`}>
+        <label class={`${row} grid grid-cols-[5rem_minmax(0,1fr)] sm:grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-4`}>
           <span class={label}>{t.country}</span>
           <select value={corridor?.country} onChange={(e) => setCountry(e.currentTarget.value as Country)}
             class="w-full min-w-0 cursor-pointer bg-transparent text-base font-semibold outline-none">
-            {corridors.map((c) => <option key={c.country} value={c.country}>{COUNTRY_NAMES[c.country]} · {c.currency}</option>)}
+            {corridors.map((c) => <option key={c.country} value={c.country}>{countries[c.country]} · {c.currency}</option>)}
           </select>
         </label>
 
         <label class={row}>
           <span class={label}>{side === "buy" ? t.pays : t.receives}</span>
           <span class="mt-1 flex items-baseline gap-3">
-            <input inputMode="decimal" value={amount} onInput={(e) => setAmount(e.currentTarget.value.replace(/[^\d.]/g, ""))}
-              class="w-full min-w-0 bg-transparent font-display text-4xl font-bold tabular-nums outline-none" aria-label={t.amountIn(currency)} />
+            <input inputMode="decimal" value={amount} onInput={(e) => setAmount(e.currentTarget.value.replace(",", ".").replace(/[^\d.]/g, ""))}
+              class="w-full min-w-0 bg-transparent font-display text-4xl font-bold tabular-nums outline-none" aria-label={fill(t.amountIn, { currency })} />
             <span class="font-mono text-sm text-muted">{currency}</span>
           </span>
         </label>
@@ -122,26 +111,26 @@ export default function QuoteWidget() {
         <div class="border-b border-line py-4">
           <span class={label}>{side === "buy" ? t.receives : t.sends}</span>
           <div class="mt-1 flex items-baseline justify-between gap-3 font-display text-4xl font-bold tabular-nums">
-            <Rolling value={shown ? formatNumber(shown.usdcAmount) : "—"} />
+            <Rolling value={shown ? formatNumber(shown.usdcAmount, 2, intl) : "—"} />
             <span class="font-mono text-sm font-normal text-muted">USDC</span>
           </div>
         </div>
 
-        <div role="group" aria-label={t.rail} class="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-4 border-b border-line pt-4">
+        <div role="group" aria-label={t.rail} class="grid grid-cols-[5rem_minmax(0,1fr)] sm:grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-4 border-b border-line pt-4">
           <span class={`${label} pb-3`}>{t.rail}</span>
           <div class="flex flex-wrap gap-x-6">
             {corridor?.rails.map((r) => (
               <button key={r} type="button" onClick={() => setRail(r)} aria-pressed={activeRail === r}
-                class={`${tab(activeRail === r)} pb-3 text-sm font-semibold`}>{RAIL_NAMES[r]}</button>
+                class={`${tab(activeRail === r)} whitespace-nowrap pb-3 text-sm font-semibold`}>{rails[r]}</button>
             ))}
           </div>
         </div>
 
         <dl class="space-y-2 py-5 text-sm">
           <div class="flex justify-between gap-3"><dt class="text-ink/70">{t.rate}</dt>
-            <dd class="font-mono tabular-nums">{shown ? `1 USDC = ${formatFiat(shown.rate, currency, Math.max(decimals, 2))}` : "—"}</dd></div>
+            <dd class="whitespace-nowrap font-mono tabular-nums">{shown ? `1 USDC = ${formatFiat(shown.rate, currency, Math.max(decimals, 2), intl)}` : "—"}</dd></div>
           <div class="flex justify-between gap-3"><dt class="text-ink/70">{side === "buy" ? t.fiatPaid : t.fiatReceived}</dt>
-            <dd class="font-mono tabular-nums">{shown ? formatFiat(shown.fiatAmount, currency, decimals) : "—"}</dd></div>
+            <dd class="whitespace-nowrap font-mono tabular-nums">{shown ? formatFiat(shown.fiatAmount, currency, decimals, intl) : "—"}</dd></div>
           <div class="flex justify-between gap-3"><dt class="text-ink/70">{t.fee}</dt><dd class="font-mono text-ocean">{t.none}</dd></div>
         </dl>
         {!valid && <p class="pb-4 text-sm text-error">{t.invalid}</p>}

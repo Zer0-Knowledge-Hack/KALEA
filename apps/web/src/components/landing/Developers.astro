@@ -1,7 +1,14 @@
 ---
 import CrownDivider from "../ornaments/CrownDivider.astro";
 import DotRoute from "../ornaments/DotRoute.astro";
+import { useTranslations, type Locale } from "../../i18n";
 import { CONTACT_URL, DOCS_URL, btnGhostDark, btnPrimary, container, eyebrow, h2, sectionY } from "./styles";
+
+interface Props {
+  locale: Locale;
+}
+
+const copy = useTranslations(Astro.props.locale).developers;
 
 // Real contract of POST /v1/quotes (apps/api/src/app.ts: quoteSchema and the /quotes route).
 // The response was computed with the shared demo pricing for Brazil and the demo integrator fee (30 bps).
@@ -31,29 +38,15 @@ const highlight = (value: unknown) =>
       return colon ? `<span class="text-ocean-100">${str}</span>${colon}` : `<span class="text-apricot">${str}</span>`;
     });
 
-const copy = {
-  eyebrow: "Developers",
-  headline: ["One REST API.", "Testnet sandbox today."],
-  sub: "Quote, create an order, track it to release. Your fee stays on your side of the API.",
-  next: "— next",
-  docs: "Read the docs",
-  key: "Request an API key",
-  response: "Response",
-  caption: "Demo pricing on testnet · illustrative values",
-};
-const features: { text: string; next?: boolean }[] = [
-  { text: "API keys per integrator" },
-  { text: "Corridors, quotes, orders and balance endpoints" },
-  { text: "Public demo quote endpoint, no key needed" },
-  { text: "Webhooks and an SDK", next: true },
-];
+// Code, API paths and JSON stay untranslated.
+const features = [...copy.features.map((text) => ({ text, next: false })), ...copy.featuresNext.map((text) => ({ text, next: true }))];
 ---
 
 <section id="developers" class="bg-deep">
   <div class:list={[container, sectionY]}>
     <CrownDivider class="text-deep-line" />
     <p class:list={[eyebrow, "mt-16"]}>{copy.eyebrow}</p>
-    <h2 class:list={[h2, "mt-5"]}>{copy.headline[0]} <span class="text-deep-soft">{copy.headline[1]}</span></h2>
+    <h2 class:list={[h2, "mt-5"]}>{copy.headline.main} <span class="text-deep-soft">{copy.headline.soft}</span></h2>
     <div class="mt-14 grid gap-14 lg:grid-cols-12">
       <div class="min-w-0 lg:col-span-5">
         <p class="max-w-md text-lg text-deep-soft">{copy.sub}</p>

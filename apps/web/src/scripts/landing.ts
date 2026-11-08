@@ -27,6 +27,19 @@ if (header && toggle && menu) {
   menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => setOpen(false)));
 }
 
+// Language switcher: keep the reader's place. Anchors are identical across locales, so the link
+// gets the id of the section currently in view (the last one whose top passed 35% of the viewport).
+document.querySelectorAll<HTMLAnchorElement>("[data-locale-link]").forEach((link) => {
+  link.addEventListener("click", () => {
+    const inView = [...document.querySelectorAll<HTMLElement>("main section[id]")]
+      .filter((s) => s.getBoundingClientRect().top <= innerHeight * 0.35)
+      .pop();
+    const url = new URL(link.href);
+    url.hash = inView ? inView.id : "";
+    link.href = url.href;
+  });
+});
+
 // Count-up numbers, eased over 1.6 s once visible.
 function countUp(el: HTMLElement) {
   const to = Number(el.dataset.count);

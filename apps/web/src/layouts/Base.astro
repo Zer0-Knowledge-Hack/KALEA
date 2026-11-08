@@ -1,35 +1,48 @@
 ---
 import "../styles/global.css";
+import { LOCALES, LOCALE_META, DEFAULT_LOCALE, localizedPath, useTranslations, type Locale } from "../i18n";
 
 interface Props {
   title?: string;
   description?: string;
+  locale?: Locale;
+  /** Emit hreflang alternates for every landing locale (only pages that exist in all locales). */
+  alternates?: boolean;
 }
 
-const {
-  title = "Kalea · Stablecoin ramp infrastructure for LATAM businesses",
-  description = "One API for fiat <-> stablecoin on-ramps, off-ramps and QR payments across Latin America, with fixed all-in quotes, local rails and on-chain settlement. Live on Stellar testnet.",
-} = Astro.props;
+const { locale = DEFAULT_LOCALE, alternates = false } = Astro.props;
+const { meta } = useTranslations(locale);
+const { title = meta.title, description = meta.description } = Astro.props;
+const current = LOCALE_META[locale];
 
 // Absolute when `site` is configured in astro.config, otherwise root-relative.
-const ogImage = Astro.site ? new URL("/og.png", Astro.site).href : "/og.png";
+// `site` is not set yet, so hreflang links are root-relative until the production domain exists.
+const url = (path: string) => (Astro.site ? new URL(path, Astro.site).href : path);
+const ogImage = url("/og.png");
+const hreflangs = [
+  ...LOCALES.map((l) => ({ hreflang: LOCALE_META[l].hreflang, href: url(localizedPath(l)) })),
+  { hreflang: "x-default", href: url(localizedPath(DEFAULT_LOCALE)) },
+];
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={current.htmlLang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {alternates && hreflangs.map((h) => <link rel="alternate" hreflang={h.hreflang} href={h.href} />)}
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Kalea" />
+    <meta property="og:locale" content={current.ogLocale} />
+    {alternates && LOCALES.filter((l) => l !== (locale as string)).map((l) => <meta property="og:locale:alternate" content={LOCALE_META[l].ogLocale} />)}
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Kalea logo over a street in perspective" />
+    <meta property="og:image:alt" content={meta.ogImageAlt} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />

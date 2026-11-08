@@ -1,14 +1,14 @@
 ---
 import RoadArrow from "../ornaments/RoadArrow.astro";
 import StreetPerspective from "../ornaments/StreetPerspective.astro";
+import { useTranslations, type Locale } from "../../i18n";
 import { CONTACT_URL, btnGhostDark, btnPrimary } from "./styles";
 
-const copy = {
-  headline: "Add LATAM ramps to your product.",
-  sub: "Start on the testnet sandbox, or walk through your corridors with the team.",
-  start: "Start building",
-  demo: "Book a demo",
-};
+interface Props {
+  locale: Locale;
+}
+
+const copy = useTranslations(Astro.props.locale).cta;
 ---
 
 <!-- Dusk: the only gradient in the system. Perspective lines start below the copy; the footer skyline overlaps the bottom. -->

@@ -1,27 +1,14 @@
 ---
 import Merge from "../ornaments/Merge.astro";
+import { useTranslations, type Locale } from "../../i18n";
 import { container, eyebrowLight, h2, sectionY } from "./styles";
 
-const copy = {
-  eyebrow: "How it works",
-  headline: "Escrow-first. Fiat stays local.",
-  safetyLabel: "Safety",
-  mergeFiat: "Fiat · local rails",
-  mergeCoin: "Stablecoin · on-chain",
-  mergeOrder: "One order",
-  note: "Testnet today: the escrow lifecycle is simulated while the on-chain contract is built.",
-};
-const steps = [
-  ["Quote", "Request a fixed all-in quote by country, side, rail and amount. Valid for 5 minutes."],
-  ["Lock", "Kalea matches an independent local liquidity partner and locks the stablecoins in escrow."],
-  ["Pay locally", "Fiat moves over Pix, SPEI, Yape, QR Simple or bank transfer, between your user and the partner."],
-  ["Release", "On confirmation the escrow releases the stablecoins. Your fee comes from your prefunded balance."],
-];
-const safety = [
-  "Fiat never touches Kalea.",
-  "Every order gets its own escrow with fixed amounts.",
-  "Disputes freeze the escrow; an insurance fund covers resolved losses.",
-];
+interface Props {
+  locale: Locale;
+}
+
+const copy = useTranslations(Astro.props.locale).howItWorks;
+const { steps, safety } = copy;
 ---
 
 <section id="how-it-works" class="bg-surface text-ink">
@@ -31,7 +18,7 @@ const safety = [
 
     <!-- The route is the layout: a dashed lane with one stop per step, ending in the Apricot release. -->
     <ol class="relative mt-20 grid gap-12 border-l-2 border-dashed border-ocean pl-8 lg:grid-cols-4 lg:gap-10 lg:border-l-0 lg:border-t-2 lg:pl-0">
-      {steps.map(([t, d], i) => {
+      {steps.map(({ title: t, body: d }, i) => {
         const last = i === steps.length - 1;
         return (
           <li data-reveal style={`--delay:${i * 0.08}s`} class="relative lg:pt-12">

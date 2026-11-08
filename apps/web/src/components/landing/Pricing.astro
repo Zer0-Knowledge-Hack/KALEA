@@ -2,21 +2,15 @@
 import { QUOTE_TTL_MS } from "@kalea/shared";
 import { DEMO_COUNTRIES } from "../../lib/catalog";
 import HeroNumber from "../ornaments/HeroNumber.astro";
+import { useTranslations, type Locale } from "../../i18n";
 import { container, eyebrowLight, h2, sectionY } from "./styles";
 
+interface Props {
+  locale: Locale;
+}
+
+const copy = useTranslations(Astro.props.locale).pricing;
 const quoteMinutes = QUOTE_TTL_MS / 60_000;
-const copy = {
-  eyebrow: "Pricing",
-  headline: "Only integrators pay Kalea.",
-  sub: "Set per country and side, over a market reference rate.",
-  quoteValidity: "quote validity",
-  corridors: "demo corridors on testnet",
-};
-const terms: [string, string][] = [
-  ["End users", "One all-in price. No Kalea fee line."],
-  ["You", "A per-transaction fee from a prefunded balance, lower at volume."],
-  ["Your markup", "Optional. Set by you, on top."],
-];
 ---
 
 <section id="pricing" class="bg-white text-ink">
@@ -28,7 +22,7 @@ const terms: [string, string][] = [
     </div>
     <div class="lg:col-span-6 lg:col-start-7">
       <dl class="border-b border-line">
-        {terms.map(([k, v]) => (
+        {copy.terms.map(({ term: k, detail: v }) => (
           <div class="grid gap-1 border-t border-line py-5 sm:grid-cols-[9rem_1fr] sm:gap-6">
             <dt class="font-mono text-[11px] uppercase tracking-[0.16em] text-ocean sm:pt-1">{k}</dt>
             <dd class="text-lg">{v}</dd>
@@ -36,7 +30,7 @@ const terms: [string, string][] = [
         ))}
       </dl>
       <div class="mt-14 grid grid-cols-2 gap-8">
-        <HeroNumber label={copy.quoteValidity}><span data-count={quoteMinutes} data-suffix=" min">{quoteMinutes} min</span></HeroNumber>
+        <HeroNumber label={copy.quoteValidity}><span data-count={quoteMinutes} data-suffix={` ${copy.minutes}`}>{quoteMinutes} {copy.minutes}</span></HeroNumber>
         <HeroNumber label={copy.corridors}><span data-count={DEMO_COUNTRIES.length}>{DEMO_COUNTRIES.length}</span></HeroNumber>
       </div>
     </div>

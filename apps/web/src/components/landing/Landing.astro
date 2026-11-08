@@ -1,0 +1,42 @@
+---
+/** The whole landing for one locale. Pages under src/pages are thin wrappers around it. */
+import Base from "../../layouts/Base.astro";
+import type { Locale } from "../../i18n";
+import Nav from "./Nav.astro";
+import Hero from "./Hero.astro";
+import Value from "./Value.astro";
+import HowItWorks from "./HowItWorks.astro";
+import Quote from "./Quote.astro";
+import Coverage from "./Coverage.astro";
+import Developers from "./Developers.astro";
+import Pricing from "./Pricing.astro";
+import Faq from "./Faq.astro";
+import Cta from "./Cta.astro";
+import Footer from "./Footer.astro";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<Base locale={locale} alternates>
+  <Nav locale={locale} />
+  <main>
+    <Hero locale={locale} />
+    <Value locale={locale} />
+    <HowItWorks locale={locale} />
+    <Quote locale={locale} />
+    <Coverage locale={locale} />
+    <Developers locale={locale} />
+    <Pricing locale={locale} />
+    <Faq locale={locale} />
+    <Cta locale={locale} />
+  </main>
+  <Footer locale={locale} />
+</Base>
+
+<script>
+  import "../../scripts/landing";
+</script>

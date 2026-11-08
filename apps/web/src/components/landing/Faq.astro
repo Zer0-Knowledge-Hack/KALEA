@@ -1,31 +1,17 @@
 ---
 import CrownDivider from "../ornaments/CrownDivider.astro";
+import { useTranslations, type Locale } from "../../i18n";
 import { container, eyebrowLight, h2, sectionY } from "./styles";
 
-const copy = { eyebrow: "FAQ", headline: "Questions, answered.", topics: "FAQ topics" };
+interface Props {
+  locale: Locale;
+}
 
-// Integrator-facing only. Liquidity partners get their own surface later.
-const groups: { id: string; title: string; faqs: [string, string][] }[] = [
-  {
-    id: "businesses",
-    title: "Businesses",
-    faqs: [
-      ["Who is Kalea for?", "Businesses that want local on-ramps, off-ramps or QR payments in their product: wallets, exchanges, fintechs, payment apps, marketplaces and platforms. Kalea does not serve consumers directly."],
-      ["Which networks and stablecoins do you support?", "Today, USDC on the Stellar testnet. Kalea is built to support USDC and USDT across EVM networks (Ethereum, Base, Polygon, Arbitrum, BNB Chain) and non-EVM networks (Solana, Tron); those are next."],
-      ["Which countries are covered?", "Bolivia, Brazil, Peru and Mexico have demo pricing on testnet. Argentina, Colombia, Chile and Ecuador are planned."],
-      ["Does Kalea hold my users' money?", "Kalea never holds local fiat; it moves over local rails between your end user and an independent local liquidity partner. Stablecoins are held by a per-order escrow until the order is released, refunded or resolved."],
-      ["Can I use Kalea with real funds today?", "Not yet. Kalea runs on testnet with demo pricing. Licensing requirements will be assessed per country before operating with real funds."],
-    ],
-  },
-  {
-    id: "developers",
-    title: "Developers",
-    faqs: [
-      ["How do I integrate?", "Your backend calls the REST API with an API key: list corridors, request a quote, create an order and follow it to release. The public demo quote endpoint needs no key."],
-      ["Can I accept QR payments?", "Yes. A QR payment is an off-ramp variant: create a sell order with kind qr_payment and the QR payload. Your end user locks stablecoins and the third-party QR is paid in local currency."],
-      ["Do you offer webhooks or an SDK?", "Not yet; both are next. Today you read an order's status from the orders endpoint."],
-    ],
-  },
+const copy = useTranslations(Astro.props.locale).faq;
+// Integrator-facing only. Liquidity partners get their own surface later. Group ids are stable across locales.
+const groups = [
+  { id: "businesses", title: copy.businesses.title, faqs: copy.businesses.items },
+  { id: "developers", title: copy.developers.title, faqs: copy.developers.items },
 ];
 ---
 
@@ -50,7 +36,7 @@ const groups: { id: string; title: string; faqs: [string, string][] }[] = [
           <div id={`faq-${g.id}`} data-tabpanel class:list={[{ "mt-12": gi > 0 }, "[.tabs-on_&]:mt-0"]}>
             <h3 data-tabheading class="pb-3 font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-ocean">{g.title}</h3>
             <div class="divide-y divide-line border-y border-line [.tabs-on_&]:border-t-0">
-              {g.faqs.map(([q, a], i) => (
+              {g.faqs.map(({ q, a }, i) => (
                 <details name={`faq-${g.id}`} open={i === 0}>
                   <summary class="flex w-full cursor-pointer list-none items-center justify-between gap-6 py-5 text-left text-lg font-medium">
                     {q}

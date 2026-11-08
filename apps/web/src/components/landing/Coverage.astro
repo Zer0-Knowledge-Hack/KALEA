@@ -1,28 +1,19 @@
 ---
 import { COUNTRIES, COUNTRY_CATALOG } from "@kalea/shared";
-import { COUNTRY_NAMES, DEMO_COUNTRIES, RAIL_NAMES } from "../../lib/catalog";
+import { DEMO_COUNTRIES } from "../../lib/catalog";
+import { useTranslations, type Locale } from "../../i18n";
 import CityGrid from "../ornaments/CityGrid.astro";
 import Intersection from "../ornaments/Intersection.astro";
 import StatusLabel from "./StatusLabel.astro";
 import { container, eyebrowLight, h2, sectionY } from "./styles";
 
-const copy = {
-  eyebrow: "Coverage",
-  headline: "Local rails, one integration.",
-  sub: "Built to support USDC and USDT across EVM and non-EVM chains.",
-  columns: ["Country", "Currency", "Rails", "Status"],
-  legend: "Live: priced demo corridor on Stellar testnet.",
-  networksLabel: "Stablecoins & networks",
-  live: "Live",
-  next: "Next",
-  liveAsset: "USDC on Stellar",
-  liveNote: "Testnet today.",
-};
-const nextGroups = [
-  ["Stablecoins", "USDT"],
-  ["EVM", "Ethereum, Base, Polygon, Arbitrum, BNB Chain"],
-  ["Non-EVM", "Solana, Tron"],
-];
+interface Props {
+  locale: Locale;
+}
+
+const t = useTranslations(Astro.props.locale);
+const copy = t.coverage;
+const nextGroups = copy.nextGroups;
 // Demo corridors first, then planned ones, each in catalog order.
 const rows = [...COUNTRIES].sort((a, b) => Number(DEMO_COUNTRIES.includes(b)) - Number(DEMO_COUNTRIES.includes(a)));
 const cols = "sm:grid-cols-[minmax(0,3fr)_minmax(0,1.3fr)_minmax(0,4fr)_6rem]";
@@ -40,7 +31,8 @@ const cols = "sm:grid-cols-[minmax(0,3fr)_minmax(0,1.3fr)_minmax(0,4fr)_6rem]";
 
     <div class="mt-16 grid gap-14 lg:grid-cols-12">
       <!-- City grid with the Apricot route: the coverage map motif, in the margin column. -->
-      <CityGrid class="hidden w-full max-w-[17rem] lg:col-span-3 lg:block" />
+      <!-- On phones it stays as a small mark above the table instead of disappearing. -->
+      <CityGrid class="w-20 lg:col-span-3 lg:w-full lg:max-w-[17rem]" />
       <div class="min-w-0 lg:col-span-8 lg:col-start-5">
         <div aria-hidden="true" class:list={["hidden gap-x-6 pb-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted sm:grid", cols]}>
           {copy.columns.map((c) => <span>{c}</span>)}
@@ -50,10 +42,10 @@ const cols = "sm:grid-cols-[minmax(0,3fr)_minmax(0,1.3fr)_minmax(0,4fr)_6rem]";
             const live = DEMO_COUNTRIES.includes(c);
             return (
               <li class:list={["grid grid-cols-[auto_1fr_auto] items-baseline gap-x-4 gap-y-1 border-t border-line py-4 sm:gap-x-6", cols]}>
-                <span class:list={["text-xl font-semibold tracking-tight", { "text-ink/70": !live }]}>{COUNTRY_NAMES[c]}</span>
+                <span class:list={["text-xl font-semibold tracking-tight", { "text-ink/70": !live }]}>{t.countries[c]}</span>
                 <span class="font-mono text-sm text-muted">{COUNTRY_CATALOG[c].currency}</span>
-                <span class="order-last col-span-3 text-ink/75 sm:order-none sm:col-span-1">{COUNTRY_CATALOG[c].rails.map((r) => RAIL_NAMES[r]).join(", ")}</span>
-                <StatusLabel live={live} />
+                <span class="order-last col-span-3 text-ink/75 sm:order-none sm:col-span-1">{COUNTRY_CATALOG[c].rails.map((r) => t.rails[r]).join(", ")}</span>
+                <StatusLabel live={live} label={live ? copy.live : copy.next} />
               </li>
             );
           })}
@@ -76,7 +68,7 @@ const cols = "sm:grid-cols-[minmax(0,3fr)_minmax(0,1.3fr)_minmax(0,4fr)_6rem]";
       <div class="border-t border-line pt-5 lg:col-span-4">
         <StatusLabel live={false} label={copy.next} />
         <dl class="mt-5 space-y-3">
-          {nextGroups.map(([k, v]) => (
+          {nextGroups.map(({ label: k, items: v }) => (
             <div>
               <dt class="font-mono text-[11px] uppercase tracking-[0.16em] text-muted">{k}</dt>
               <dd class="mt-0.5 text-ink/80">{v}</dd>
