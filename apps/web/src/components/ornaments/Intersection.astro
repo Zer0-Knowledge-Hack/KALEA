@@ -1,0 +1,25 @@
+---
+/**
+ * Intersection, top view: the live Apricot street crossing a wider avenue whose lanes are still being
+ * painted (dashed). Says "one live crossing today, more roads joining". Decorative only.
+ */
+interface Props {
+  class?: string;
+}
+
+const { class: className = "" } = Astro.props;
+const W = 360;
+const H = 200;
+const r = 26;
+const cx = W * 0.58;
+const cy = H * 0.45;
+const bar = (r * 2 - 12) / 12;
+---
+
+<svg viewBox={`0 0 ${W} ${H}`} class:list={["pointer-events-none", className]} aria-hidden="true" focusable="false">
+  <rect x="0" y={cy - r} width={W} height={r * 2} class="fill-ocean-100" />
+  <rect x={cx - r} y="0" width={r * 2} height={H} class="fill-apricot" />
+  <line x1="0" y1={cy} x2={cx - r - 8} y2={cy} class="stroke-ocean" stroke-width="2" stroke-dasharray="12 10" />
+  <line x1={cx + r + 8} y1={cy} x2={W} y2={cy} class="stroke-ocean" stroke-width="2" stroke-dasharray="12 10" />
+  {Array.from({ length: 6 }, (_, i) => <rect x={cx - r + 6 + i * ((r * 2 - 12) / 6)} y={cy + r + 6} width={bar} height="18" class="fill-ocean-100" />)}
+</svg>

@@ -1,0 +1,27 @@
+---
+/**
+ * Crop corners: four chamfered corner marks that frame their content, like a viewfinder.
+ * Place inside a `relative` box; the top-right corner is the Apricot accent. Decorative only.
+ */
+interface Props {
+  /** Stroke color for the three neutral corners, as a Tailwind stroke class. */
+  stroke?: string;
+  class?: string;
+}
+
+const { stroke = "stroke-white/50", class: className = "" } = Astro.props;
+const corners = [
+  { pos: "left-0 top-0", flip: "", tone: stroke },
+  { pos: "right-0 top-0", flip: "-scale-x-100", tone: "stroke-apricot" },
+  { pos: "bottom-0 left-0", flip: "-scale-y-100", tone: stroke },
+  { pos: "bottom-0 right-0", flip: "rotate-180", tone: stroke },
+];
+---
+
+<div class:list={["pointer-events-none absolute inset-0", className]} aria-hidden="true">
+  {corners.map((c) => (
+    <svg viewBox="0 0 40 40" class:list={["absolute size-8 sm:size-10", c.pos, c.flip]} focusable="false">
+      <path d="M40 1.5 H12 L1.5 12 V40" fill="none" class={c.tone} stroke-width="2" vector-effect="non-scaling-stroke" />
+    </svg>
+  ))}
+</div>
