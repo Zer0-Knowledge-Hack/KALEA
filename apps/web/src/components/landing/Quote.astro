@@ -1,0 +1,29 @@
+---
+import QuoteWidget from "../islands/QuoteWidget";
+import CropCorners from "../ornaments/CropCorners.astro";
+import CrownPattern from "../ornaments/CrownPattern.astro";
+import { container, eyebrow, h2, sectionY } from "./styles";
+
+const copy = {
+  eyebrow: "Live quote",
+  headline: "One price. The exact amount.",
+  sub: "A fixed all-in quote from the testnet demo API. What your user sees is what they pay.",
+};
+---
+
+<section id="quote" class="bg-deep">
+  <div class:list={[container, sectionY, "grid gap-14 lg:grid-cols-12 lg:items-center"]}>
+    <div class="lg:col-span-5">
+      <p class={eyebrow}>{copy.eyebrow}</p>
+      <h2 class:list={[h2, "mt-5"]}>{copy.headline}</h2>
+      <p class="mt-6 max-w-sm text-lg text-deep-soft">{copy.sub}</p>
+      <!-- Quiet crown texture in the margin, below the copy (never behind text). -->
+      <CrownPattern class="mt-14 hidden h-44 w-full max-w-sm lg:block" />
+    </div>
+    <!-- Crop corners frame the widget as an abstract viewfinder, not a device. -->
+    <div class="relative p-5 sm:p-8 lg:col-span-6 lg:col-start-7">
+      <CropCorners />
+      <QuoteWidget client:visible />
+    </div>
+  </div>
+</section>

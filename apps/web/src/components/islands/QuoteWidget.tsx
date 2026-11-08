@@ -4,7 +4,28 @@ import { ApiRequestError, api, type DemoQuote, type QuoteRequest } from "../../l
 import { LogoMark } from "../logo";
 import { COUNTRY_NAMES, RAIL_NAMES, fallbackCorridors, formatFiat, formatNumber, localDemoQuote, type Corridor } from "../../lib/catalog";
 
-const sideLabel: Record<Side, string> = { buy: "On-ramp", sell: "Off-ramp" };
+/** User-visible strings, kept together for translation. */
+const t = {
+  side: { buy: "On-ramp", sell: "Off-ramp" } as Record<Side, string>,
+  direction: "Direction",
+  country: "Country",
+  rail: "Rail",
+  pays: "End user pays",
+  receives: "End user receives",
+  sends: "End user sends",
+  rate: "All-in rate",
+  fiatPaid: "Fiat paid",
+  fiatReceived: "Fiat received",
+  fee: "Kalea fee to end user",
+  none: "None",
+  amountIn: (currency: string) => `Amount in ${currency}`,
+  invalid: "Enter a valid amount.",
+  unavailable: "Quote unavailable",
+  rateLimited: "Too many quotes in a short time, showing local demo pricing.",
+  sourceLive: "Live quote · testnet demo API",
+  sourceDemo: "Demo pricing · illustrative values",
+  poweredBy: "Powered by",
+};
 
 /** Where the shown quote came from: the API's public demo endpoint, or local demo pricing. */
 type Source = "live" | "demo";
@@ -21,10 +42,16 @@ async function fetchQuote(input: QuoteRequest): Promise<{ quote: DemoQuote; sour
     return { quote, source: "live", notice: null };
   } catch (e) {
     if (e instanceof ApiRequestError && e.status === 400) throw e;
-    const notice = e instanceof ApiRequestError && e.status === 429 ? "Too many quotes in a short time, showing local demo pricing." : null;
+    const notice = e instanceof ApiRequestError && e.status === 429 ? t.rateLimited : null;
     return { quote: localDemoQuote(input), source: "demo", notice };
   }
 }
+
+const label = "font-mono text-[11px] uppercase tracking-[0.16em] text-muted";
+const row = "block border-b border-line py-4 transition-colors focus-within:border-ocean";
+/** Underline text tab: the selected option gets an Ocean rule, never a filled pill. */
+const tab = (on: boolean) =>
+  `-mb-px border-b-2 transition-colors ${on ? "border-ocean text-ink" : "border-transparent text-ink/70 hover:text-ink"}`;
 
 /** Corridor quote demo: one all-in price for the end user, from the API's public demo endpoint. */
 export default function QuoteWidget() {
@@ -50,83 +77,82 @@ export default function QuoteWidget() {
   useEffect(() => {
     if (!valid || !corridor || !activeRail) { setQuote(null); return; }
     let cancelled = false;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       fetchQuote({ country: corridor.country, side, rail: activeRail, amount: fiatAmount, amountIn: "fiat" })
         .then((r) => { if (!cancelled) { setQuote(r.quote); setSource(r.source); setNotice(r.notice); setError(null); } })
-        .catch((e) => { if (!cancelled) { setQuote(null); setError(e instanceof Error ? e.message : "Quote unavailable"); } });
+        .catch((e) => { if (!cancelled) { setQuote(null); setError(e instanceof Error ? e.message : t.unavailable); } });
     }, 250);
-    return () => { cancelled = true; clearTimeout(t); };
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [corridor, side, activeRail, fiatAmount, valid]);
 
   const currency = corridor?.currency ?? "USD";
   const decimals = corridor?.fiatDecimals ?? 2;
   const shown = quote && quote.country === corridor?.country ? quote : null;
 
-  // White-label look: neutral surfaces and an Ocean primary control, so integrators can re-theme it.
+  // White-label look: neutral surfaces, hairline rows and an Ocean selection rule, so integrators can re-theme it.
   // Kalea's only mark inside the widget is the "Powered by Kalea" footer in the muted text color.
   return (
-    <div class="rounded-3xl border border-line bg-white p-2 text-ink shadow-[0_40px_120px_-40px_rgba(0,0,0,.6)]">
-      <div class="relative grid grid-cols-2 gap-1 rounded-2xl bg-surface p-1">
-        <span aria-hidden="true"
-          class={`absolute inset-y-1 left-1 w-[calc(50%-0.375rem)] rounded-xl bg-ocean transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)] ${side === "sell" ? "translate-x-[calc(100%+0.25rem)]" : ""}`} />
+    <div class="cut-tr bg-white text-ink [--cut:22px]">
+      <div role="group" aria-label={t.direction} class="flex gap-8 border-b border-line px-6 pt-5 sm:px-8">
         {(["buy", "sell"] as Side[]).map((s) => (
-          <button key={s} type="button" onClick={() => setSide(s)} aria-pressed={side === s} class="relative rounded-xl py-2.5 text-sm font-semibold">
-            <span class={`relative transition-colors ${side === s ? "text-white" : "text-ink/70"}`}>{sideLabel[s]}</span>
+          <button key={s} type="button" onClick={() => setSide(s)} aria-pressed={side === s} class={`${tab(side === s)} pb-3.5 text-[15px] font-semibold`}>
+            {t.side[s]}
           </button>
         ))}
       </div>
 
-      <div class="space-y-3 p-4">
-        <label class="block rounded-2xl border border-line bg-white p-4 focus-within:border-ocean">
-          <span class="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">Country</span>
+      <div class="px-6 sm:px-8">
+        <label class={`${row} grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-4`}>
+          <span class={label}>{t.country}</span>
           <select value={corridor?.country} onChange={(e) => setCountry(e.currentTarget.value as Country)}
-            class="mt-1 w-full bg-transparent text-lg font-semibold outline-none">
+            class="w-full min-w-0 cursor-pointer bg-transparent text-base font-semibold outline-none">
             {corridors.map((c) => <option key={c.country} value={c.country}>{COUNTRY_NAMES[c.country]} · {c.currency}</option>)}
           </select>
         </label>
 
-        <label class="block rounded-2xl border border-line bg-white p-4 focus-within:border-ocean">
-          <span class="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{side === "buy" ? "End user pays" : "End user receives"}</span>
-          <div class="mt-1 flex items-center gap-2">
+        <label class={row}>
+          <span class={label}>{side === "buy" ? t.pays : t.receives}</span>
+          <span class="mt-1 flex items-baseline gap-3">
             <input inputMode="decimal" value={amount} onInput={(e) => setAmount(e.currentTarget.value.replace(/[^\d.]/g, ""))}
-              class="w-full min-w-0 bg-transparent text-3xl font-bold tabular-nums outline-none" aria-label={`Amount in ${currency}`} />
-            <span class="rounded-full bg-surface px-3 py-1 font-mono text-xs">{currency}</span>
-          </div>
+              class="w-full min-w-0 bg-transparent font-display text-4xl font-bold tabular-nums outline-none" aria-label={t.amountIn(currency)} />
+            <span class="font-mono text-sm text-muted">{currency}</span>
+          </span>
         </label>
 
-        <div class="rounded-2xl border border-line bg-white p-4">
-          <span class="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{side === "buy" ? "End user receives" : "End user sends"}</span>
-          <div class="mt-1 flex items-center justify-between text-3xl font-bold tabular-nums">
+        <div class="border-b border-line py-4">
+          <span class={label}>{side === "buy" ? t.receives : t.sends}</span>
+          <div class="mt-1 flex items-baseline justify-between gap-3 font-display text-4xl font-bold tabular-nums">
             <Rolling value={shown ? formatNumber(shown.usdcAmount) : "—"} />
-            <span class="rounded-full bg-surface px-3 py-1 font-mono text-xs font-normal">USDC</span>
+            <span class="font-mono text-sm font-normal text-muted">USDC</span>
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
-          {corridor?.rails.map((r) => (
-            <button key={r} type="button" onClick={() => setRail(r)} aria-pressed={activeRail === r}
-              class={`flex-1 rounded-xl border px-3 py-2 font-mono text-[11px] uppercase tracking-wider transition ${activeRail === r ? "border-ocean bg-ocean-100 text-ocean" : "border-line text-ink/70 hover:border-muted"}`}>{RAIL_NAMES[r]}</button>
-          ))}
+        <div role="group" aria-label={t.rail} class="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-4 border-b border-line pt-4">
+          <span class={`${label} pb-3`}>{t.rail}</span>
+          <div class="flex flex-wrap gap-x-6">
+            {corridor?.rails.map((r) => (
+              <button key={r} type="button" onClick={() => setRail(r)} aria-pressed={activeRail === r}
+                class={`${tab(activeRail === r)} pb-3 text-sm font-semibold`}>{RAIL_NAMES[r]}</button>
+            ))}
+          </div>
         </div>
 
-        <dl class="space-y-1.5 rounded-xl border border-line px-3 py-3 text-sm">
-          <div class="flex justify-between gap-3"><dt class="text-ink/70">All-in rate</dt>
+        <dl class="space-y-2 py-5 text-sm">
+          <div class="flex justify-between gap-3"><dt class="text-ink/70">{t.rate}</dt>
             <dd class="font-mono tabular-nums">{shown ? `1 USDC = ${formatFiat(shown.rate, currency, Math.max(decimals, 2))}` : "—"}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="text-ink/70">{side === "buy" ? "Fiat paid" : "Fiat received"}</dt>
+          <div class="flex justify-between gap-3"><dt class="text-ink/70">{side === "buy" ? t.fiatPaid : t.fiatReceived}</dt>
             <dd class="font-mono tabular-nums">{shown ? formatFiat(shown.fiatAmount, currency, decimals) : "—"}</dd></div>
-          <div class="flex justify-between gap-3"><dt class="text-ink/70">Kalea fee to end user</dt><dd class="font-mono text-ocean">None</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-ink/70">{t.fee}</dt><dd class="font-mono text-ocean">{t.none}</dd></div>
         </dl>
-        {!valid && <p class="p-1 text-sm text-error">Enter a valid amount.</p>}
-        {valid && error && <p role="alert" class="rounded-xl border border-dashed border-error/50 p-3 text-sm text-error">{error}</p>}
-        {valid && !error && notice && <p class="rounded-xl border border-dashed border-line p-3 text-sm text-ink/70">{notice}</p>}
+        {!valid && <p class="pb-4 text-sm text-error">{t.invalid}</p>}
+        {valid && error && <p role="alert" class="border-l-2 border-error pb-1 pl-3 text-sm text-error">{error}</p>}
+        {valid && !error && notice && <p class="border-l-2 border-line pl-3 text-sm text-ink/70">{notice}</p>}
 
-        <p class="text-center font-mono text-[10px] uppercase tracking-[0.14em] text-muted">
-          {source === "live" ? "Live quote · testnet demo API" : "Demo pricing · illustrative values"}
-        </p>
+        <p class={`${label} pb-5 pt-3 text-[10px]`}>{source === "live" ? t.sourceLive : t.sourceDemo}</p>
       </div>
 
-      <p class="flex items-center justify-center gap-1.5 border-t border-line px-4 py-3 text-xs text-muted">
-        Powered by <LogoMark size={14} tone="mono" /> <span class="font-semibold">Kalea</span>
+      <p class="flex items-center gap-1.5 border-t border-line px-6 py-3.5 text-xs text-muted sm:px-8">
+        {t.poweredBy} <LogoMark size={14} tone="mono" /> <span class="font-semibold">Kalea</span>
       </p>
     </div>
   );
