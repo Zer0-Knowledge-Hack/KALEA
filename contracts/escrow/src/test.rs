@@ -3,605 +3,772 @@ extern crate std;
 
 use super::*;
 use soroban_sdk::{
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
+    testutils::{Address as _, AuthorizedFunction, Ledger, MockAuth, MockAuthInvoke},
     token::{StellarAssetClient, TokenClient},
-    vec, IntoVal, Symbol,
+    IntoVal, Symbol,
 };
 
-const UNIT: i128 = 10_000_000; // 1 USDC con 7 decimales
-const TTL: u64 = 60 * 60;
+const UNIT: i128 = 10_000_000; // 1 USDC, 7 decimals
+const PAY: u64 = 30 * 60; // payment_timeout
+const CONF: u64 = 2 * 60 * 60; // confirmation_timeout
+const START: u64 = 1_700_000_000;
 
-struct Setup<'a> {
+struct S<'a> {
     env: Env,
-    escrow: KaleaEscrowClient<'a>,
+    esc: KaleaEscrowClient<'a>,
     usdc: TokenClient<'a>,
     admin: Address,
     arbiter: Address,
-    treasury: Address,
-    partner: Address, // depositante (socio local en pay-in)
-    app: Address,     // beneficiario (app integradora)
+    operator: Address,
+    vault: Address,
+    fund: Address,
+    merchant: Address,
+    user: Address,
 }
 
-fn setup_with_fee(fee_bps: u32) -> Setup<'static> {
+fn setup() -> S<'static> {
     let env = Env::default();
     env.mock_all_auths();
-    env.ledger().with_mut(|l| l.timestamp = 1_700_000_000);
-    let admin = Address::generate(&env);
-    let arbiter = Address::generate(&env);
-    let treasury = Address::generate(&env);
-    let partner = Address::generate(&env);
-    let app = Address::generate(&env);
-    let issuer = Address::generate(&env);
-    let sac = env.register_stellar_asset_contract_v2(issuer);
-    let usdc_id = sac.address();
-    StellarAssetClient::new(&env, &usdc_id).mint(&partner, &(1_000 * UNIT));
-    StellarAssetClient::new(&env, &usdc_id).mint(&app, &(1_000 * UNIT));
+    env.ledger().with_mut(|l| l.timestamp = START);
+    let g = || Address::generate(&env);
+    let (admin, arbiter, operator, vault, fund, merchant, user) =
+        (g(), g(), g(), g(), g(), g(), g());
+    let sac = env.register_stellar_asset_contract_v2(g());
+    StellarAssetClient::new(&env, &sac.address()).mint(&merchant, &(10_000 * UNIT));
+    StellarAssetClient::new(&env, &sac.address()).mint(&user, &(10_000 * UNIT));
     let id = env.register(
         KaleaEscrow,
         (
             admin.clone(),
             arbiter.clone(),
-            treasury.clone(),
-            usdc_id.clone(),
-            fee_bps,
+            operator.clone(),
+            sac.address(),
+            vault.clone(),
+            fund.clone(),
         ),
     );
-    let escrow = KaleaEscrowClient::new(&env, &id);
-    let usdc = TokenClient::new(&env, &usdc_id);
-    Setup {
+    let esc = KaleaEscrowClient::new(&env, &id);
+    let usdc = TokenClient::new(&env, &sac.address());
+    S {
         env,
-        escrow,
+        esc,
         usdc,
         admin,
         arbiter,
-        treasury,
-        partner,
-        app,
+        operator,
+        vault,
+        fund,
+        merchant,
+        user,
     }
 }
 
-fn setup() -> Setup<'static> {
-    setup_with_fee(50) // 0,5 %
-}
-
-fn r(env: &Env, n: u8) -> BytesN<32> {
+fn rf(env: &Env, n: u8) -> BytesN<32> {
     BytesN::from_array(env, &[n; 32])
 }
 
-fn open(s: &Setup, amount: i128, n: u8) -> u64 {
-    s.escrow
-        .create(&s.partner, &s.app, &amount, &TTL, &r(&s.env, n))
+/// Business-model example: 100 USDC to the recipient + 1.5 reward + 0.1 insurance = 101.6 locked.
+fn params(
+    s: &S,
+    depositor: &Address,
+    recipient: &Address,
+    merchant: &Address,
+    n: u8,
+) -> LockParams {
+    LockParams {
+        depositor: depositor.clone(),
+        recipient: recipient.clone(),
+        merchant: merchant.clone(),
+        recipient_amount: 100 * UNIT,
+        reward: 15 * UNIT / 10,
+        insurance: UNIT / 10,
+        payment_timeout: PAY,
+        confirmation_timeout: CONF,
+        external_ref: rf(&s.env, n),
+    }
 }
 
-fn advance(s: &Setup, secs: u64) {
+/// Buy (on-ramp): the merchant locks USDC, the end user pays fiat.
+fn buy(s: &S, n: u8) -> u64 {
+    s.esc.lock(&params(s, &s.merchant, &s.user, &s.merchant, n))
+}
+
+/// Sell (off-ramp): the end user locks USDC, the merchant pays fiat.
+fn sell(s: &S, n: u8) -> u64 {
+    s.esc.lock(&params(s, &s.user, &s.merchant, &s.merchant, n))
+}
+
+fn ev(s: &S) -> BytesN<32> {
+    BytesN::from_array(&s.env, &[0xab; 32])
+}
+
+fn advance(s: &S, secs: u64) {
     s.env.ledger().with_mut(|l| l.timestamp += secs);
 }
 
-/// La última llamada exigió exactamente la firma de `who` sobre `fn_name` del escrow.
-fn assert_signed_by(s: &Setup, who: &Address, fn_name: &str) {
-    let auths = s.env.auths();
-    assert!(
-        auths.iter().any(|(a, inv)| a == who
-            && matches!(&inv.function, AuthorizedFunction::Contract((c, f, _)) if *c == s.escrow.address && *f == Symbol::new(&s.env, fn_name))),
-        "{fn_name} no exigió la firma esperada: {auths:?}"
-    );
+fn signed_by(s: &S, who: &Address, f: &str) -> bool {
+    s.env.auths().iter().any(|(a, inv)| a == who && matches!(&inv.function, AuthorizedFunction::Contract((c, name, _)) if *c == s.esc.address && *name == Symbol::new(&s.env, f)))
+}
+
+fn status(s: &S, id: u64) -> Status {
+    s.esc.get_order(&id).status
 }
 
 // ---------------- constructor ----------------
 
 #[test]
-fn constructor_guarda_config() {
+fn constructor_stores_config() {
     let s = setup();
-    let c = s.escrow.get_config();
-    assert_eq!(c.admin, s.admin);
-    assert_eq!(c.arbiter, s.arbiter);
-    assert_eq!(c.treasury, s.treasury);
-    assert_eq!(c.token, s.usdc.address);
-    assert_eq!(c.fee_bps, 50);
+    let c = s.esc.get_config();
+    assert_eq!(
+        (
+            c.admin,
+            c.arbiter,
+            c.operator,
+            c.reward_vault,
+            c.insurance_fund,
+            c.token
+        ),
+        (
+            s.admin.clone(),
+            s.arbiter.clone(),
+            s.operator.clone(),
+            s.vault.clone(),
+            s.fund.clone(),
+            s.usdc.address.clone()
+        )
+    );
     assert!(!c.paused);
 }
 
-#[test]
-#[should_panic]
-fn constructor_rechaza_fee_sobre_el_tope() {
-    setup_with_fee(MAX_FEE_BPS + 1);
-}
-
-// ---------------- crear ----------------
+// ---------------- lock ----------------
 
 #[test]
-fn create_bloquea_fondos_y_exige_firma_del_depositante() {
+fn lock_takes_the_fixed_total_and_requires_the_depositor() {
     let s = setup();
-    let id = open(&s, 100 * UNIT, 1);
+    let id = buy(&s, 1);
+    assert!(signed_by(&s, &s.merchant, "lock"));
     assert_eq!(id, 0);
+    assert_eq!(s.usdc.balance(&s.esc.address), 1016 * UNIT / 10);
     assert_eq!(
-        s.env.auths()[0],
-        (
-            s.partner.clone(),
-            AuthorizedInvocation {
-                function: AuthorizedFunction::Contract((
-                    s.escrow.address.clone(),
-                    Symbol::new(&s.env, "create"),
-                    (
-                        s.partner.clone(),
-                        s.app.clone(),
-                        100 * UNIT,
-                        TTL,
-                        r(&s.env, 1)
-                    )
-                        .into_val(&s.env),
-                )),
-                sub_invocations: std::vec![AuthorizedInvocation {
-                    function: AuthorizedFunction::Contract((
-                        s.usdc.address.clone(),
-                        Symbol::new(&s.env, "transfer"),
-                        vec![
-                            &s.env,
-                            s.partner.to_val(),
-                            s.escrow.address.to_val(),
-                            (100 * UNIT).into_val(&s.env)
-                        ],
-                    )),
-                    sub_invocations: std::vec![],
-                }],
-            }
-        )
+        s.usdc.balance(&s.merchant),
+        10_000 * UNIT - 1016 * UNIT / 10
     );
-    assert_eq!(s.usdc.balance(&s.escrow.address), 100 * UNIT);
-    assert_eq!(s.usdc.balance(&s.partner), 900 * UNIT);
-    let o = s.escrow.get_order(&id);
-    assert_eq!(o.status, Status::Locked);
-    assert_eq!(o.fee, UNIT / 2); // 0,5 % de 100
-    assert_eq!(o.expires_at, 1_700_000_000 + TTL);
-    assert_eq!(s.escrow.order_by_ref(&r(&s.env, 1)), id);
+    let o = s.esc.get_order(&id);
+    assert_eq!(o.status, Status::EscrowLocked);
+    assert_eq!(o.payment_deadline, START + PAY);
+    assert_eq!(o.confirmation_deadline, 0);
+    assert_eq!(s.esc.order_by_ref(&rf(&s.env, 1)), id);
 }
 
 #[test]
-fn ids_son_secuenciales() {
+fn ids_are_sequential() {
     let s = setup();
-    assert_eq!(open(&s, UNIT, 1), 0);
-    assert_eq!(open(&s, UNIT, 2), 1);
-    assert_eq!(open(&s, UNIT, 3), 2);
+    assert_eq!(buy(&s, 1), 0);
+    assert_eq!(sell(&s, 2), 1);
+    assert_eq!(buy(&s, 3), 2);
 }
 
 #[test]
-fn create_valida_entradas() {
+fn lock_validates_parties() {
     let s = setup();
-    let e = &s.env;
+    let other = Address::generate(&s.env);
     assert_eq!(
-        s.escrow.try_create(&s.partner, &s.app, &0, &TTL, &r(e, 1)),
-        Err(Ok(Error::InvalidAmount))
-    );
-    assert_eq!(
-        s.escrow.try_create(&s.partner, &s.app, &-5, &TTL, &r(e, 1)),
-        Err(Ok(Error::InvalidAmount))
-    );
-    assert_eq!(
-        s.escrow
-            .try_create(&s.partner, &s.partner, &UNIT, &TTL, &r(e, 1)),
+        s.esc
+            .try_lock(&params(&s, &s.merchant, &s.merchant, &s.merchant, 1)),
         Err(Ok(Error::SameParties))
     );
     assert_eq!(
-        s.escrow
-            .try_create(&s.partner, &s.app, &UNIT, &(MIN_TTL_SECS - 1), &r(e, 1)),
-        Err(Ok(Error::InvalidExpiry))
+        s.esc.try_lock(&params(&s, &s.merchant, &s.user, &other, 1)),
+        Err(Ok(Error::InvalidMerchant))
     );
-    assert_eq!(
-        s.escrow
-            .try_create(&s.partner, &s.app, &UNIT, &(MAX_TTL_SECS + 1), &r(e, 1)),
-        Err(Ok(Error::InvalidExpiry))
-    );
-    // los límites exactos sí valen
-    s.escrow
-        .create(&s.partner, &s.app, &UNIT, &MIN_TTL_SECS, &r(e, 2));
-    s.escrow
-        .create(&s.partner, &s.app, &UNIT, &MAX_TTL_SECS, &r(e, 3));
 }
 
 #[test]
-fn create_rechaza_referencia_duplicada() {
+fn lock_validates_amounts_and_caps() {
     let s = setup();
-    open(&s, UNIT, 7);
+    let base = params(&s, &s.merchant, &s.user, &s.merchant, 1);
+    let mut p = base.clone();
+    p.recipient_amount = 0;
+    assert_eq!(s.esc.try_lock(&p), Err(Ok(Error::InvalidAmount)));
+    let mut p = base.clone();
+    p.reward = -1;
+    assert_eq!(s.esc.try_lock(&p), Err(Ok(Error::InvalidAmount)));
+    let mut p = base.clone();
+    p.insurance = -1;
+    assert_eq!(s.esc.try_lock(&p), Err(Ok(Error::InvalidAmount)));
+    // reward cap 3%: 3 USDC on 100 is allowed, 3 USDC + 1 stroop is not
+    let mut p = base.clone();
+    p.reward = 3 * UNIT + 1;
+    assert_eq!(s.esc.try_lock(&p), Err(Ok(Error::InvalidAmount)));
+    // insurance cap 0.5%
+    let mut p = base.clone();
+    p.insurance = UNIT / 2 + 1;
+    assert_eq!(s.esc.try_lock(&p), Err(Ok(Error::InvalidAmount)));
+    let mut p = base.clone();
+    p.reward = 3 * UNIT;
+    p.insurance = UNIT / 2;
+    s.esc.lock(&p);
+    // zero reward and insurance are valid
+    let mut p = base;
+    p.reward = 0;
+    p.insurance = 0;
+    p.external_ref = rf(&s.env, 2);
+    s.esc.lock(&p);
+}
+
+#[test]
+fn lock_validates_timeouts() {
+    let s = setup();
+    let base = params(&s, &s.merchant, &s.user, &s.merchant, 1);
+    for (pay, conf) in [
+        (MIN_TIMEOUT_SECS - 1, CONF),
+        (MAX_TIMEOUT_SECS + 1, CONF),
+        (PAY, MIN_TIMEOUT_SECS - 1),
+        (PAY, MAX_TIMEOUT_SECS + 1),
+    ] {
+        let mut p = base.clone();
+        p.payment_timeout = pay;
+        p.confirmation_timeout = conf;
+        assert_eq!(s.esc.try_lock(&p), Err(Ok(Error::InvalidTimeout)));
+    }
+    let mut p = base;
+    p.payment_timeout = MIN_TIMEOUT_SECS;
+    p.confirmation_timeout = MAX_TIMEOUT_SECS;
+    s.esc.lock(&p);
+}
+
+#[test]
+fn lock_rejects_duplicate_reference() {
+    let s = setup();
+    buy(&s, 7);
     assert_eq!(
-        s.escrow
-            .try_create(&s.partner, &s.app, &UNIT, &TTL, &r(&s.env, 7)),
+        s.esc
+            .try_lock(&params(&s, &s.user, &s.merchant, &s.merchant, 7)),
         Err(Ok(Error::DuplicateRef))
     );
 }
 
 #[test]
-fn create_falla_sin_saldo_y_no_deja_rastro() {
+fn failed_lock_leaves_no_trace() {
     let s = setup();
-    let pobre = Address::generate(&s.env);
+    let broke = Address::generate(&s.env);
     assert!(s
-        .escrow
-        .try_create(&pobre, &s.app, &UNIT, &TTL, &r(&s.env, 1))
+        .esc
+        .try_lock(&params(&s, &broke, &s.user, &broke, 1))
         .is_err());
-    // la transacción revierte completa: ni orden, ni referencia, ni id consumido
-    assert_eq!(s.escrow.try_get_order(&0), Err(Ok(Error::OrderNotFound)));
+    assert_eq!(s.esc.try_get_order(&0), Err(Ok(Error::OrderNotFound)));
     assert_eq!(
-        s.escrow.try_order_by_ref(&r(&s.env, 1)),
+        s.esc.try_order_by_ref(&rf(&s.env, 1)),
         Err(Ok(Error::OrderNotFound))
     );
-    assert_eq!(open(&s, UNIT, 2), 0);
+    assert_eq!(buy(&s, 1), 0);
 }
 
 #[test]
-fn create_bloqueado_en_pausa() {
+fn pause_blocks_only_new_locks() {
     let s = setup();
-    s.escrow.set_paused(&true);
+    let a = buy(&s, 1);
+    let b = buy(&s, 2);
+    let c = buy(&s, 3);
+    let d = buy(&s, 4);
+    s.esc.set_paused(&true);
     assert_eq!(
-        s.escrow
-            .try_create(&s.partner, &s.app, &UNIT, &TTL, &r(&s.env, 1)),
+        s.esc
+            .try_lock(&params(&s, &s.merchant, &s.user, &s.merchant, 9)),
         Err(Ok(Error::Paused))
     );
-    s.escrow.set_paused(&false);
-    open(&s, UNIT, 1);
+    s.esc.mark_paid(&a, &ev(&s));
+    s.esc.release(&a);
+    s.esc.cancel(&b, &s.user);
+    s.esc.mark_paid(&c, &ev(&s));
+    s.esc.dispute(&c, &s.user);
+    s.esc.resolve(&c, &false);
+    advance(&s, PAY);
+    s.esc.expire(&d);
+    assert_eq!(s.usdc.balance(&s.esc.address), 0);
+    s.esc.set_paused(&false);
+    buy(&s, 9);
 }
 
-// ---------------- liberar ----------------
+// ---------------- buy (on-ramp) happy path ----------------
 
 #[test]
-fn release_paga_neto_y_comision() {
+fn buy_full_flow_splits_recipient_reward_and_insurance() {
     let s = setup();
-    let id = open(&s, 200 * UNIT, 1);
-    s.escrow.release(&id);
-    assert_signed_by(&s, &s.partner, "release");
-    assert_eq!(s.usdc.balance(&s.app), 1_000 * UNIT + 199 * UNIT); // 200 − 1 (0,5 %)
-    assert_eq!(s.usdc.balance(&s.treasury), UNIT);
-    assert_eq!(s.usdc.balance(&s.escrow.address), 0);
-    assert_eq!(s.escrow.get_order(&id).status, Status::Released);
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    assert!(signed_by(&s, &s.user, "mark_paid"));
+    let o = s.esc.get_order(&id);
+    assert_eq!(o.status, Status::FiatSent);
+    assert_eq!(o.evidence, ev(&s));
+    assert_eq!(o.confirmation_deadline, START + CONF);
+    s.esc.release(&id);
+    assert!(signed_by(&s, &s.merchant, "release"));
+    assert_eq!(s.usdc.balance(&s.user), 10_000 * UNIT + 100 * UNIT);
+    assert_eq!(s.usdc.balance(&s.vault), 15 * UNIT / 10);
+    assert_eq!(s.usdc.balance(&s.fund), UNIT / 10);
+    assert_eq!(s.usdc.balance(&s.esc.address), 0);
+    assert_eq!(status(&s, id), Status::Released);
 }
 
+// ---------------- sell (off-ramp) and QR payment ----------------
+
 #[test]
-fn release_no_se_puede_repetir() {
+fn sell_full_flow_pays_the_merchant() {
     let s = setup();
-    let id = open(&s, UNIT, 1);
-    s.escrow.release(&id);
-    assert_eq!(s.escrow.try_release(&id), Err(Ok(Error::InvalidState)));
-    assert_eq!(s.escrow.try_refund(&id), Err(Ok(Error::InvalidState)));
-    assert_eq!(s.escrow.try_cancel(&id), Err(Ok(Error::InvalidState)));
-    assert_eq!(s.escrow.try_dispute(&id), Err(Ok(Error::InvalidState)));
+    let id = sell(&s, 1);
+    assert!(signed_by(&s, &s.user, "lock"));
+    s.esc.mark_paid(&id, &ev(&s)); // the merchant paid the user (or a third-party QR) in fiat
+    assert!(signed_by(&s, &s.merchant, "mark_paid"));
+    s.esc.release(&id); // the user confirms receipt
+    assert!(signed_by(&s, &s.user, "release"));
+    assert_eq!(s.usdc.balance(&s.merchant), 10_000 * UNIT + 100 * UNIT);
+    assert_eq!(s.usdc.balance(&s.vault), 15 * UNIT / 10);
+    assert_eq!(s.esc.get_order(&id).merchant, s.merchant);
 }
 
-#[test]
-fn release_funciona_despues_de_vencer() {
-    // el depositante siempre puede pagar, aun vencida
-    let s = setup();
-    let id = open(&s, UNIT, 1);
-    advance(&s, TTL + 10);
-    s.escrow.release(&id);
-    assert_eq!(s.escrow.get_order(&id).status, Status::Released);
-}
+// ---------------- mark_paid ----------------
 
 #[test]
-fn orden_inexistente() {
+fn only_the_recipient_marks_paid_and_only_once() {
     let s = setup();
-    assert_eq!(s.escrow.try_release(&99), Err(Ok(Error::OrderNotFound)));
-    assert_eq!(s.escrow.try_refund(&99), Err(Ok(Error::OrderNotFound)));
-    assert_eq!(s.escrow.try_dispute(&99), Err(Ok(Error::OrderNotFound)));
-    assert_eq!(
-        s.escrow.try_resolve(&99, &true),
-        Err(Ok(Error::OrderNotFound))
-    );
-}
-
-// ---------------- cancelar y devolver ----------------
-
-#[test]
-fn cancel_del_beneficiario_devuelve_todo_sin_comision() {
-    let s = setup();
-    let id = open(&s, 100 * UNIT, 1);
-    s.escrow.cancel(&id);
-    assert_signed_by(&s, &s.app, "cancel");
-    assert_eq!(s.usdc.balance(&s.partner), 1_000 * UNIT);
-    assert_eq!(s.usdc.balance(&s.treasury), 0);
-    assert_eq!(s.escrow.get_order(&id).status, Status::Refunded);
-}
-
-#[test]
-fn refund_solo_tras_vencer() {
-    let s = setup();
-    let id = open(&s, 100 * UNIT, 1);
-    assert_eq!(s.escrow.try_refund(&id), Err(Ok(Error::NotExpired)));
-    advance(&s, TTL - 1);
-    assert_eq!(s.escrow.try_refund(&id), Err(Ok(Error::NotExpired)));
-    advance(&s, 1);
-    s.escrow.refund(&id);
-    assert_eq!(s.usdc.balance(&s.partner), 1_000 * UNIT);
-    assert_eq!(s.escrow.get_order(&id).status, Status::Refunded);
-}
-
-#[test]
-fn refund_no_requiere_firmas() {
-    // cualquiera puede ejecutarlo: el único destino posible es el depositante
-    let s = setup();
-    let id = open(&s, UNIT, 1);
-    advance(&s, TTL);
-    s.env.set_auths(&[]);
-    s.escrow.refund(&id);
-    assert!(s.env.auths().is_empty());
-    assert_eq!(s.usdc.balance(&s.partner), 1_000 * UNIT);
-}
-
-// ---------------- disputas ----------------
-
-#[test]
-fn dispute_bloquea_el_refund_y_el_cancel() {
-    let s = setup();
-    let id = open(&s, 100 * UNIT, 1);
-    s.escrow.dispute(&id);
-    assert_signed_by(&s, &s.app, "dispute");
-    assert_eq!(s.escrow.get_order(&id).status, Status::Disputed);
-    advance(&s, TTL * 2);
-    assert_eq!(s.escrow.try_refund(&id), Err(Ok(Error::InvalidState)));
-    assert_eq!(s.escrow.try_cancel(&id), Err(Ok(Error::InvalidState)));
-    assert_eq!(s.escrow.try_dispute(&id), Err(Ok(Error::InvalidState)));
-}
-
-#[test]
-fn dispute_solo_antes_de_vencer() {
-    let s = setup();
-    let id = open(&s, UNIT, 1);
-    advance(&s, TTL);
-    assert_eq!(s.escrow.try_dispute(&id), Err(Ok(Error::Expired)));
-}
-
-#[test]
-fn resolve_a_favor_del_beneficiario() {
-    let s = setup();
-    let id = open(&s, 100 * UNIT, 1);
-    s.escrow.dispute(&id);
-    s.escrow.resolve(&id, &true);
-    assert_signed_by(&s, &s.arbiter, "resolve");
-    assert_eq!(s.usdc.balance(&s.app), 1_000 * UNIT + 100 * UNIT - UNIT / 2);
-    assert_eq!(s.usdc.balance(&s.treasury), UNIT / 2);
-    assert_eq!(s.escrow.get_order(&id).status, Status::Released);
-}
-
-#[test]
-fn resolve_a_favor_del_depositante() {
-    let s = setup();
-    let id = open(&s, 100 * UNIT, 1);
-    s.escrow.dispute(&id);
-    s.escrow.resolve(&id, &false);
-    assert_eq!(s.usdc.balance(&s.partner), 1_000 * UNIT);
-    assert_eq!(s.usdc.balance(&s.treasury), 0);
-    assert_eq!(s.escrow.get_order(&id).status, Status::Refunded);
-    assert_eq!(
-        s.escrow.try_resolve(&id, &true),
-        Err(Ok(Error::InvalidState))
-    );
-}
-
-#[test]
-fn resolve_solo_con_disputa_abierta() {
-    let s = setup();
-    let id = open(&s, UNIT, 1);
-    assert_eq!(
-        s.escrow.try_resolve(&id, &true),
-        Err(Ok(Error::InvalidState))
-    );
-}
-
-#[test]
-fn el_depositante_puede_ceder_en_disputa() {
-    let s = setup();
-    let id = open(&s, UNIT, 1);
-    s.escrow.dispute(&id);
-    s.escrow.release(&id);
-    assert_eq!(s.escrow.get_order(&id).status, Status::Released);
-}
-
-// ---------------- autorización (sin mocks) ----------------
-
-#[test]
-fn nadie_sin_firma_puede_mover_fondos() {
-    let s = setup();
-    let id = open(&s, UNIT, 1);
-    let id2 = open(&s, UNIT, 2);
-    s.escrow.dispute(&id2);
-    s.env.set_auths(&[]); // a partir de aquí ninguna firma es válida
-    assert!(s.escrow.try_release(&id).is_err());
-    assert!(s.escrow.try_cancel(&id).is_err());
-    assert!(s.escrow.try_dispute(&id).is_err());
-    assert!(s.escrow.try_resolve(&id2, &true).is_err());
-    assert!(s
-        .escrow
-        .try_create(&s.partner, &s.app, &UNIT, &TTL, &r(&s.env, 3))
-        .is_err());
-    assert!(s.escrow.try_set_fee(&10).is_err());
-    assert!(s.escrow.try_set_paused(&true).is_err());
-    assert!(s.escrow.try_set_arbiter(&s.partner).is_err());
-    assert!(s.escrow.try_set_treasury(&s.partner).is_err());
-    assert!(s.escrow.try_propose_admin(&s.partner).is_err());
-    assert!(s
-        .escrow
-        .try_upgrade(&BytesN::from_array(&s.env, &[0; 32]))
-        .is_err());
-    // nada se movió
-    assert_eq!(s.usdc.balance(&s.escrow.address), 2 * UNIT);
-    assert_eq!(s.escrow.get_order(&id).status, Status::Locked);
-}
-
-#[test]
-fn el_beneficiario_no_puede_liberarse_a_si_mismo() {
-    use soroban_sdk::testutils::{MockAuth, MockAuthInvoke};
-    let s = setup();
-    let id = open(&s, UNIT, 1);
-    // la app firma `release`, pero el contrato exige la firma del depositante
-    let res = s
-        .escrow
+    let id = buy(&s, 1);
+    let r = s
+        .esc
         .mock_auths(&[MockAuth {
-            address: &s.app,
+            address: &s.merchant,
             invoke: &MockAuthInvoke {
-                contract: &s.escrow.address,
+                contract: &s.esc.address,
+                fn_name: "mark_paid",
+                args: (id, ev(&s)).into_val(&s.env),
+                sub_invokes: &[],
+            },
+        }])
+        .try_mark_paid(&id, &ev(&s));
+    assert!(r.is_err());
+    s.esc.mark_paid(&id, &ev(&s));
+    assert_eq!(
+        s.esc.try_mark_paid(&id, &ev(&s)),
+        Err(Ok(Error::InvalidState))
+    );
+}
+
+#[test]
+fn mark_paid_only_before_the_payment_deadline() {
+    let s = setup();
+    let id = buy(&s, 1);
+    advance(&s, PAY - 1);
+    let id2 = buy(&s, 2);
+    s.esc.mark_paid(&id, &ev(&s)); // last second is fine
+    advance(&s, PAY);
+    assert_eq!(
+        s.esc.try_mark_paid(&id2, &ev(&s)),
+        Err(Ok(Error::DeadlinePassed))
+    );
+}
+
+// ---------------- release ----------------
+
+#[test]
+fn release_needs_fiat_sent() {
+    let s = setup();
+    let id = buy(&s, 1);
+    assert_eq!(s.esc.try_release(&id), Err(Ok(Error::InvalidState)));
+}
+
+#[test]
+fn release_settles_exactly_once() {
+    let s = setup();
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    s.esc.release(&id);
+    assert_eq!(s.esc.try_release(&id), Err(Ok(Error::InvalidState)));
+    assert_eq!(s.esc.try_cancel(&id, &s.user), Err(Ok(Error::InvalidState)));
+    assert_eq!(s.esc.try_expire(&id), Err(Ok(Error::InvalidState)));
+    assert_eq!(
+        s.esc.try_dispute(&id, &s.user),
+        Err(Ok(Error::InvalidState))
+    );
+    assert_eq!(s.esc.try_resolve(&id, &false), Err(Ok(Error::InvalidState)));
+}
+
+#[test]
+fn recipient_cannot_release_to_itself() {
+    let s = setup();
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    let r = s
+        .esc
+        .mock_auths(&[MockAuth {
+            address: &s.user,
+            invoke: &MockAuthInvoke {
+                contract: &s.esc.address,
                 fn_name: "release",
                 args: (id,).into_val(&s.env),
                 sub_invokes: &[],
             },
         }])
         .try_release(&id);
-    assert!(res.is_err());
-    assert_eq!(s.escrow.get_order(&id).status, Status::Locked);
+    assert!(r.is_err());
+    assert_eq!(status(&s, id), Status::FiatSent);
 }
 
 #[test]
-fn el_depositante_no_puede_resolver_su_disputa() {
-    use soroban_sdk::testutils::{MockAuth, MockAuthInvoke};
+fn release_still_works_after_the_confirmation_deadline() {
     let s = setup();
-    let id = open(&s, UNIT, 1);
-    s.escrow.dispute(&id);
-    let res = s
-        .escrow
-        .mock_auths(&[MockAuth {
-            address: &s.partner,
-            invoke: &MockAuthInvoke {
-                contract: &s.escrow.address,
-                fn_name: "resolve",
-                args: (id, false).into_val(&s.env),
-                sub_invokes: &[],
-            },
-        }])
-        .try_resolve(&id, &false);
-    assert!(res.is_err());
-    assert_eq!(s.escrow.get_order(&id).status, Status::Disputed);
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    advance(&s, CONF * 3);
+    s.esc.release(&id);
+    assert_eq!(status(&s, id), Status::Released);
 }
 
-// ---------------- administración ----------------
+// ---------------- cancel ----------------
 
 #[test]
-fn set_fee_respeta_el_tope_y_no_toca_ordenes_abiertas() {
+fn recipient_or_operator_can_cancel_before_fiat_is_sent() {
     let s = setup();
-    let id = open(&s, 100 * UNIT, 1);
+    let a = buy(&s, 1);
+    let b = buy(&s, 2);
+    s.esc.cancel(&a, &s.user);
+    assert!(signed_by(&s, &s.user, "cancel"));
+    s.esc.cancel(&b, &s.operator);
+    assert!(signed_by(&s, &s.operator, "cancel"));
+    assert_eq!(s.usdc.balance(&s.merchant), 10_000 * UNIT);
+    assert_eq!(s.usdc.balance(&s.vault), 0);
+    assert_eq!(s.usdc.balance(&s.fund), 0);
+    assert_eq!(status(&s, a), Status::Cancelled);
+}
+
+#[test]
+fn depositor_and_strangers_cannot_cancel() {
+    let s = setup();
+    let id = buy(&s, 1);
     assert_eq!(
-        s.escrow.try_set_fee(&(MAX_FEE_BPS + 1)),
-        Err(Ok(Error::InvalidFee))
+        s.esc.try_cancel(&id, &s.merchant),
+        Err(Ok(Error::NotAllowed))
     );
-    s.escrow.set_fee(&MAX_FEE_BPS);
-    assert_signed_by(&s, &s.admin, "set_fee");
-    let id2 = open(&s, 100 * UNIT, 2);
-    assert_eq!(s.escrow.get_order(&id).fee, UNIT / 2); // fijada al crear
-    assert_eq!(s.escrow.get_order(&id2).fee, UNIT); // 1 %
-    s.escrow.release(&id);
-    assert_eq!(s.usdc.balance(&s.treasury), UNIT / 2);
-}
-
-#[test]
-fn la_pausa_no_traba_los_fondos() {
-    let s = setup();
-    let a = open(&s, UNIT, 1);
-    let b = open(&s, UNIT, 2);
-    let c = open(&s, UNIT, 3);
-    let d = open(&s, UNIT, 4);
-    s.escrow.set_paused(&true);
-    s.escrow.release(&a);
-    s.escrow.cancel(&b);
-    s.escrow.dispute(&c);
-    s.escrow.resolve(&c, &false);
-    advance(&s, TTL);
-    s.escrow.refund(&d);
-    assert_eq!(s.usdc.balance(&s.escrow.address), 0);
-}
-
-#[test]
-fn traspaso_de_admin_en_dos_pasos() {
-    let s = setup();
-    let nuevo = Address::generate(&s.env);
-    assert_eq!(s.escrow.try_accept_admin(), Err(Ok(Error::NoPendingAdmin)));
-    s.escrow.propose_admin(&nuevo);
-    assert_eq!(s.escrow.get_config().admin, s.admin); // aún no cambia
-    s.escrow.accept_admin();
-    assert_signed_by(&s, &nuevo, "accept_admin");
-    assert_eq!(s.escrow.get_config().admin, nuevo);
-    assert_eq!(s.escrow.try_accept_admin(), Err(Ok(Error::NoPendingAdmin)));
-}
-
-#[test]
-fn cambiar_arbitro_y_tesoreria() {
-    let s = setup();
-    let arb = Address::generate(&s.env);
-    let tes = Address::generate(&s.env);
-    s.escrow.set_arbiter(&arb);
-    s.escrow.set_treasury(&tes);
-    let id = open(&s, 100 * UNIT, 1);
-    s.escrow.dispute(&id);
-    s.escrow.resolve(&id, &true);
-    assert_signed_by(&s, &arb, "resolve");
-    assert_eq!(s.usdc.balance(&tes), UNIT / 2);
-}
-
-// ---------------- aritmética ----------------
-
-#[test]
-fn comision_redondea_hacia_abajo() {
-    assert_eq!(fee_for(199, 50), Ok(0)); // 0,995 → 0
-    assert_eq!(fee_for(200, 50), Ok(1));
-    assert_eq!(fee_for(10_000, 100), Ok(100));
-    assert_eq!(fee_for(1, 0), Ok(0));
-}
-
-#[test]
-fn comision_detecta_desbordamiento() {
-    assert_eq!(fee_for(i128::MAX, 100), Err(Error::Overflow));
     assert_eq!(
-        fee_for(i128::MAX / 100, 100),
-        Ok(i128::MAX / 100 * 100 / 10_000)
+        s.esc.try_cancel(&id, &Address::generate(&s.env)),
+        Err(Ok(Error::NotAllowed))
+    );
+    assert_eq!(
+        s.esc.try_cancel(&id, &s.arbiter),
+        Err(Ok(Error::NotAllowed))
     );
 }
 
 #[test]
-fn montos_minimos_sin_comision() {
+fn no_cancel_after_fiat_is_sent() {
     let s = setup();
-    let id = open(&s, 1, 1); // 1 stroop: comisión 0
-    s.escrow.release(&id);
-    assert_eq!(s.usdc.balance(&s.treasury), 0);
-    assert_eq!(s.usdc.balance(&s.app), 1_000 * UNIT + 1);
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    assert_eq!(s.esc.try_cancel(&id, &s.user), Err(Ok(Error::InvalidState)));
+    assert_eq!(
+        s.esc.try_cancel(&id, &s.operator),
+        Err(Ok(Error::InvalidState))
+    );
+}
+
+// ---------------- expire ----------------
+
+#[test]
+fn expire_only_after_payment_timeout_and_needs_no_signature() {
+    let s = setup();
+    let id = buy(&s, 1);
+    assert_eq!(s.esc.try_expire(&id), Err(Ok(Error::NotExpired)));
+    advance(&s, PAY - 1);
+    assert_eq!(s.esc.try_expire(&id), Err(Ok(Error::NotExpired)));
+    advance(&s, 1);
+    s.env.set_auths(&[]);
+    s.esc.expire(&id);
+    assert!(s.env.auths().is_empty());
+    assert_eq!(s.usdc.balance(&s.merchant), 10_000 * UNIT);
+    assert_eq!(status(&s, id), Status::Expired);
 }
 
 #[test]
-fn conservacion_de_fondos_en_muchas_ordenes() {
-    // invariante: lo que entra al escrow sale exactamente una vez, repartido entre las partes
+fn never_auto_refund_after_fiat_is_sent() {
     let s = setup();
-    let total_inicial = s.usdc.balance(&s.partner) + s.usdc.balance(&s.app);
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    advance(&s, PAY + CONF + 1_000_000);
+    assert_eq!(s.esc.try_expire(&id), Err(Ok(Error::InvalidState)));
+    assert_eq!(s.usdc.balance(&s.esc.address), 1016 * UNIT / 10);
+}
+
+// ---------------- disputes ----------------
+
+#[test]
+fn either_party_can_dispute_after_fiat_is_sent() {
+    let s = setup();
+    let a = buy(&s, 1);
+    let b = buy(&s, 2);
+    s.esc.mark_paid(&a, &ev(&s));
+    s.esc.mark_paid(&b, &ev(&s));
+    s.esc.dispute(&a, &s.user);
+    assert!(signed_by(&s, &s.user, "dispute"));
+    s.esc.dispute(&b, &s.merchant);
+    assert!(signed_by(&s, &s.merchant, "dispute"));
+    assert_eq!(status(&s, a), Status::Disputed);
+    assert_eq!(status(&s, b), Status::Disputed);
+}
+
+#[test]
+fn no_dispute_before_fiat_is_sent() {
+    let s = setup();
+    let id = buy(&s, 1);
+    assert_eq!(
+        s.esc.try_dispute(&id, &s.user),
+        Err(Ok(Error::InvalidState))
+    );
+}
+
+#[test]
+fn confirmation_timeout_lets_anyone_open_the_dispute() {
+    let s = setup();
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    let keeper = Address::generate(&s.env);
+    advance(&s, CONF - 1);
+    assert_eq!(s.esc.try_dispute(&id, &keeper), Err(Ok(Error::NotAllowed)));
+    advance(&s, 1);
+    s.esc.dispute(&id, &keeper);
+    assert_eq!(status(&s, id), Status::Disputed);
+}
+
+#[test]
+fn resolve_fiat_paid_releases_with_the_split() {
+    let s = setup();
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    s.esc.dispute(&id, &s.user);
+    s.esc.resolve(&id, &true);
+    assert!(signed_by(&s, &s.arbiter, "resolve"));
+    assert_eq!(s.usdc.balance(&s.user), 10_100 * UNIT);
+    assert_eq!(s.usdc.balance(&s.vault), 15 * UNIT / 10);
+    assert_eq!(s.usdc.balance(&s.fund), UNIT / 10);
+    assert_eq!(status(&s, id), Status::Released);
+}
+
+#[test]
+fn resolve_fiat_not_paid_refunds_everything() {
+    let s = setup();
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    s.esc.dispute(&id, &s.merchant);
+    s.esc.resolve(&id, &false);
+    assert_eq!(s.usdc.balance(&s.merchant), 10_000 * UNIT);
+    assert_eq!(s.usdc.balance(&s.vault), 0);
+    assert_eq!(status(&s, id), Status::Cancelled);
+    assert_eq!(s.esc.try_resolve(&id, &true), Err(Ok(Error::InvalidState)));
+}
+
+#[test]
+fn resolve_needs_an_open_dispute() {
+    let s = setup();
+    let id = buy(&s, 1);
+    assert_eq!(s.esc.try_resolve(&id, &true), Err(Ok(Error::InvalidState)));
+    s.esc.mark_paid(&id, &ev(&s));
+    assert_eq!(s.esc.try_resolve(&id, &true), Err(Ok(Error::InvalidState)));
+}
+
+#[test]
+fn parties_cannot_resolve_their_own_dispute() {
+    let s = setup();
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    s.esc.dispute(&id, &s.user);
+    for who in [&s.user, &s.merchant, &s.operator, &s.admin] {
+        let r = s
+            .esc
+            .mock_auths(&[MockAuth {
+                address: who,
+                invoke: &MockAuthInvoke {
+                    contract: &s.esc.address,
+                    fn_name: "resolve",
+                    args: (id, true).into_val(&s.env),
+                    sub_invokes: &[],
+                },
+            }])
+            .try_resolve(&id, &true);
+        assert!(r.is_err());
+    }
+    assert_eq!(status(&s, id), Status::Disputed);
+}
+
+#[test]
+fn depositor_can_concede_a_dispute() {
+    let s = setup();
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    s.esc.dispute(&id, &s.user);
+    s.esc.release(&id);
+    assert_eq!(status(&s, id), Status::Released);
+}
+
+#[test]
+fn unknown_order() {
+    let s = setup();
+    assert_eq!(
+        s.esc.try_mark_paid(&9, &ev(&s)),
+        Err(Ok(Error::OrderNotFound))
+    );
+    assert_eq!(s.esc.try_release(&9), Err(Ok(Error::OrderNotFound)));
+    assert_eq!(s.esc.try_cancel(&9, &s.user), Err(Ok(Error::OrderNotFound)));
+    assert_eq!(s.esc.try_expire(&9), Err(Ok(Error::OrderNotFound)));
+    assert_eq!(
+        s.esc.try_dispute(&9, &s.user),
+        Err(Ok(Error::OrderNotFound))
+    );
+    assert_eq!(s.esc.try_resolve(&9, &true), Err(Ok(Error::OrderNotFound)));
+}
+
+// ---------------- authorization without mocks ----------------
+
+#[test]
+fn nothing_moves_without_signatures() {
+    let s = setup();
+    let a = buy(&s, 1);
+    let b = buy(&s, 2);
+    s.esc.mark_paid(&b, &ev(&s));
+    let c = buy(&s, 3);
+    s.esc.mark_paid(&c, &ev(&s));
+    s.esc.dispute(&c, &s.user);
+    s.env.set_auths(&[]);
+    assert!(s
+        .esc
+        .try_lock(&params(&s, &s.merchant, &s.user, &s.merchant, 9))
+        .is_err());
+    assert!(s.esc.try_mark_paid(&a, &ev(&s)).is_err());
+    assert!(s.esc.try_cancel(&a, &s.user).is_err());
+    assert!(s.esc.try_cancel(&a, &s.operator).is_err());
+    assert!(s.esc.try_release(&b).is_err());
+    assert!(s.esc.try_dispute(&b, &s.user).is_err());
+    assert!(s.esc.try_resolve(&c, &true).is_err());
+    assert!(s.esc.try_set_paused(&true).is_err());
+    assert!(s.esc.try_set_arbiter(&s.user).is_err());
+    assert!(s.esc.try_set_operator(&s.user).is_err());
+    assert!(s.esc.try_set_reward_vault(&s.user).is_err());
+    assert!(s.esc.try_set_insurance_fund(&s.user).is_err());
+    assert!(s.esc.try_propose_admin(&s.user).is_err());
+    assert!(s
+        .esc
+        .try_upgrade(&BytesN::from_array(&s.env, &[0; 32]))
+        .is_err());
+    assert_eq!(s.usdc.balance(&s.esc.address), 3 * 1016 * UNIT / 10);
+}
+
+// ---------------- administration ----------------
+
+#[test]
+fn admin_transfer_is_two_step() {
+    let s = setup();
+    let new = Address::generate(&s.env);
+    assert_eq!(s.esc.try_accept_admin(), Err(Ok(Error::NoPendingAdmin)));
+    s.esc.propose_admin(&new);
+    assert_eq!(s.esc.get_config().admin, s.admin);
+    s.esc.accept_admin();
+    assert!(signed_by(&s, &new, "accept_admin"));
+    assert_eq!(s.esc.get_config().admin, new);
+    assert_eq!(s.esc.try_accept_admin(), Err(Ok(Error::NoPendingAdmin)));
+}
+
+#[test]
+fn config_changes_apply_to_release() {
+    let s = setup();
+    let (arb, op, vault, fund) = (
+        Address::generate(&s.env),
+        Address::generate(&s.env),
+        Address::generate(&s.env),
+        Address::generate(&s.env),
+    );
+    s.esc.set_arbiter(&arb);
+    s.esc.set_operator(&op);
+    s.esc.set_reward_vault(&vault);
+    s.esc.set_insurance_fund(&fund);
+    let a = buy(&s, 1);
+    s.esc.cancel(&a, &op);
+    let b = buy(&s, 2);
+    s.esc.mark_paid(&b, &ev(&s));
+    s.esc.dispute(&b, &s.user);
+    s.esc.resolve(&b, &true);
+    assert!(signed_by(&s, &arb, "resolve"));
+    assert_eq!(s.usdc.balance(&vault), 15 * UNIT / 10);
+    assert_eq!(s.usdc.balance(&fund), UNIT / 10);
+    assert_eq!(
+        s.esc.try_cancel(&buy(&s, 3), &s.operator),
+        Err(Ok(Error::NotAllowed))
+    );
+}
+
+// ---------------- arithmetic ----------------
+
+#[test]
+fn caps_are_exact_and_overflow_safe() {
+    assert_eq!(within_cap(300, 10_000, 300), Ok(true));
+    assert_eq!(within_cap(301, 10_000, 300), Ok(false));
+    assert_eq!(within_cap(0, 1, 0), Ok(true));
+    assert_eq!(within_cap(i128::MAX, 1, 300), Err(Error::Overflow));
+    assert_eq!(within_cap(1, i128::MAX, 300), Err(Error::Overflow));
+}
+
+#[test]
+fn lock_rejects_overflowing_amounts() {
+    let s = setup();
+    let mut p = params(&s, &s.merchant, &s.user, &s.merchant, 1);
+    p.recipient_amount = i128::MAX;
+    assert_eq!(s.esc.try_lock(&p), Err(Ok(Error::Overflow)));
+}
+
+#[test]
+fn funds_are_conserved_across_mixed_orders() {
+    // invariant: every stroop locked leaves exactly once, split among the parties
+    let s = setup();
+    let parties = [&s.merchant, &s.user, &s.vault, &s.fund];
+    let before: i128 = parties.iter().map(|a| s.usdc.balance(a)).sum();
     let mut ids = std::vec::Vec::new();
-    for i in 0..20u8 {
-        ids.push(open(&s, (i as i128 + 1) * 3 * UNIT + 7, i));
+    for i in 0..24u8 {
+        let mut p = if i % 2 == 0 {
+            params(&s, &s.merchant, &s.user, &s.merchant, i)
+        } else {
+            params(&s, &s.user, &s.merchant, &s.merchant, i)
+        };
+        p.recipient_amount = (i as i128 + 1) * 7 * UNIT + 13;
+        p.reward = p.recipient_amount * 150 / 10_000;
+        p.insurance = p.recipient_amount * 10 / 10_000;
+        ids.push(s.esc.lock(&p));
     }
     for (k, id) in ids.iter().enumerate() {
-        match k % 4 {
-            0 => s.escrow.release(id),
-            1 => s.escrow.cancel(id),
-            2 => {
-                s.escrow.dispute(id);
-                s.escrow.resolve(id, &(k % 8 == 2));
+        let o = s.esc.get_order(id);
+        match k % 6 {
+            0 => {
+                s.esc.mark_paid(id, &ev(&s));
+                s.esc.release(id);
             }
+            1 => s.esc.cancel(id, &o.recipient),
+            2 => {
+                s.esc.mark_paid(id, &ev(&s));
+                s.esc.dispute(id, &o.depositor);
+                s.esc.resolve(id, &true);
+            }
+            3 => {
+                s.esc.mark_paid(id, &ev(&s));
+                s.esc.dispute(id, &o.recipient);
+                s.esc.resolve(id, &false);
+            }
+            4 => s.esc.cancel(id, &s.operator),
             _ => {}
         }
     }
-    advance(&s, TTL);
+    advance(&s, PAY);
     for (k, id) in ids.iter().enumerate() {
-        if k % 4 == 3 {
-            s.escrow.refund(id);
+        if k % 6 == 5 {
+            s.esc.expire(id);
         }
     }
-    assert_eq!(s.usdc.balance(&s.escrow.address), 0);
-    let total_final =
-        s.usdc.balance(&s.partner) + s.usdc.balance(&s.app) + s.usdc.balance(&s.treasury);
-    assert_eq!(total_inicial, total_final);
-}
-
-#[test]
-fn flujo_pay_out_la_app_deposita() {
-    // pay-out: la app bloquea USDC, el socio paga BOB al usuario y la app libera al socio
-    let s = setup();
-    let id = s
-        .escrow
-        .create(&s.app, &s.partner, &(50 * UNIT), &TTL, &r(&s.env, 9));
-    s.escrow.release(&id);
-    assert_signed_by(&s, &s.app, "release");
-    assert_eq!(
-        s.usdc.balance(&s.partner),
-        1_000 * UNIT + 50 * UNIT - UNIT / 4
-    );
+    assert_eq!(s.usdc.balance(&s.esc.address), 0);
+    let after: i128 = parties.iter().map(|a| s.usdc.balance(a)).sum();
+    assert_eq!(before, after);
 }

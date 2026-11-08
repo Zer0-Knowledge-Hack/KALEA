@@ -6,7 +6,7 @@ Kalea lets any business add local-currency on-ramps and off-ramps to its product
 
 Kalea is not a consumer exchange, a wallet, or a P2P marketplace. Its customers are the businesses that integrate it.
 
-> **Status:** early stage. The API and escrow lifecycle run as an in-memory simulation on testnet; a first version of the Soroban escrow is deployed on testnet ([contracts/](contracts/README.md)) and is being aligned with the canonical lifecycle. See [Current status](#current-status).
+> **Status:** early stage. The API and escrow lifecycle run as an in-memory simulation on testnet; the Soroban escrow v1 implements the canonical lifecycle and is deployed on testnet ([contracts/](contracts/README.md)); the reward vault and insurance fund contracts are pending. See [Current status](#current-status).
 
 ## Who does what
 
@@ -49,7 +49,7 @@ KALEA/
 │   └── api/        # Hono API: quotes, orders, SEP-10 auth
 ├── packages/
 │   └── shared/     # Shared domain types and demo data
-├── contracts/      # Soroban escrow (planned, not implemented)
+├── contracts/      # Soroban escrow v1 (reward vault, insurance pending)
 ├── legacy/         # Frozen historical prototype
 ├── brand/          # Logo and visual identity explorations
 └── docs/           # Product and technical documentation
