@@ -1,0 +1,45 @@
+---
+/**
+ * Street perspective supergraphic: lines converging on a vanishing point, with the Apricot street.
+ * Decorative only. Stretches to its box (preserveAspectRatio="none"); strokes keep 1.5 px.
+ */
+interface Props {
+  /** Vanishing point, as a fraction of the width. */
+  vx?: number;
+  /** Vanishing point, as a fraction of the height. */
+  vy?: number;
+  /** Street half-width at the bottom edge, as a fraction of the width. */
+  road?: number;
+  /** Draw the Apricot street triangle. */
+  street?: boolean;
+  /** Extra classes for the street group, e.g. to hide it on small screens. */
+  streetClass?: string;
+  /** Opacity of the white perspective lines. */
+  lineOpacity?: number;
+  lines?: number;
+  class?: string;
+}
+
+const { vx = 0.5, vy = 0.12, road = 0.05, street = true, streetClass = "", lineOpacity = 0.16, lines = 21, class: className = "" } = Astro.props;
+
+const W = 1440;
+const H = 800;
+const px = vx * W;
+const py = vy * H;
+const spread = W * 2.6;
+const ends = Array.from({ length: lines }, (_, i) => px - spread / 2 + (spread / (lines - 1)) * i);
+const half = road * W;
+---
+
+<svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" class:list={["pointer-events-none", className]} aria-hidden="true" focusable="false">
+  <g stroke="#FFFFFF" stroke-opacity={lineOpacity} stroke-width="1.5" fill="none">
+    {ends.map((x) => <line x1={px} y1={py} x2={x} y2={H} vector-effect="non-scaling-stroke" />)}
+  </g>
+  {street && (
+    <g class={streetClass}>
+      <polygon points={`${px},${py} ${px + half},${H} ${px - half},${H}`} fill="#EE9E4F" />
+      <!-- Street-flow: lane dashes travelling up the street (stopped by prefers-reduced-motion). -->
+      <line x1={px} y1={H} x2={px} y2={py + 40} stroke="#102941" stroke-opacity="0.45" stroke-width="2" stroke-dasharray="12 12" class="street-flow" vector-effect="non-scaling-stroke" />
+    </g>
+  )}
+</svg>
