@@ -1,0 +1,6 @@
+---
+import BrandPage from "../components/brand/BrandPage.astro";
+import { getLocale } from "../i18n";
+---
+
+<BrandPage locale={getLocale(Astro.currentLocale)} />

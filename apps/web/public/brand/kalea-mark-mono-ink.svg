@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title">
+  <title id="title">Kalea</title>
+  <g>
+    <polygon points="5,42 5,11 14,20 18.8,20 14.5,42" fill="#121A21"/>
+    <polygon points="43,42 43,11 34,20 29.2,20 33.5,42" fill="#121A21"/>
+    <polygon points="24,6 31,42 17,42" fill="#121A21"/>
+  </g>
+</svg>

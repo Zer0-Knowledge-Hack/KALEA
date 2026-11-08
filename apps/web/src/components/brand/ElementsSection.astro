@@ -1,0 +1,96 @@
+---
+/**
+ * Graphic elements: the reference files (with downloads) and the live ornaments the site already uses.
+ * Only elements listed in brand/README.md, section 6. They support the logo; they never replace it.
+ */
+import CityGrid from "../ornaments/CityGrid.astro";
+import Highlight from "../ornaments/Highlight.astro";
+import LaneUnderline from "../ornaments/LaneUnderline.astro";
+import RoadArrow from "../ornaments/RoadArrow.astro";
+import Skyline from "../ornaments/Skyline.astro";
+import { useTranslations, type Locale } from "../../i18n";
+import { container, eyebrowLight, h2, sectionY } from "../landing/styles";
+import { asset, downloadLink } from "./assets";
+
+interface Props {
+  locale: Locale;
+}
+
+const t = useTranslations(Astro.props.locale).brand.elements;
+const files = [
+  { key: "perspective", file: "street-perspective.svg", bg: "bg-deep", img: "h-full w-full object-cover", w: 1200, h: 630 },
+  { key: "pattern", file: "crown-pattern-tile.svg", bg: "bg-ocean", img: "size-28", w: 112, h: 112 },
+  { key: "plate", file: "street-plate.svg", bg: "bg-surface", img: "h-12 w-auto max-w-full", w: 300, h: 64 },
+] as const;
+const card = "flex flex-col overflow-hidden rounded-card border border-line";
+const preview = "flex h-44 items-center justify-center overflow-hidden";
+---
+
+<section id="elements" class="scroll-mt-6 bg-white text-ink">
+  <div class:list={[container, sectionY]}>
+    <div class="grid gap-6 lg:grid-cols-12 lg:items-end">
+      <div class="lg:col-span-7">
+        <p class={eyebrowLight}>{t.eyebrow}</p>
+        <h2 class:list={[h2, "mt-5"]}>{t.headline}</h2>
+      </div>
+      <p class="max-w-md text-lg text-ink/75 lg:col-span-5">{t.sub}</p>
+    </div>
+
+    <ul class="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {files.map((f) => {
+        const copy = t.items[f.key];
+        return (
+          <li class={card}>
+            <div class:list={[preview, f.bg]}>
+              <img src={asset(f.file)} alt={copy.alt} width={f.w} height={f.h} class={f.img} loading="lazy" />
+            </div>
+            <div class="flex flex-1 flex-col gap-2 p-5">
+              <p class="font-display text-lg font-semibold tracking-tight">{copy.name}</p>
+              <p class="text-sm text-ink/75">{copy.use}</p>
+              <p class="mt-auto pt-2 text-ocean">
+                <a href={asset(f.file)} download={f.file} class={downloadLink}>{t.download}</a>
+              </p>
+            </div>
+          </li>
+        );
+      })}
+
+      <!-- Live ornaments from the site; decorative, so the name and usage carry the meaning. -->
+      <li class={card}>
+        <div class:list={[preview, "bg-white"]}><CityGrid class="h-40 w-40" /></div>
+        <div class="p-5">
+          <p class="font-display text-lg font-semibold tracking-tight">{t.items.grid.name}</p>
+          <p class="mt-2 text-sm text-ink/75">{t.items.grid.use}</p>
+        </div>
+      </li>
+      <li class={card}>
+        <div class:list={[preview, "items-end bg-surface"]}><Skyline class="h-24 w-full" /></div>
+        <div class="p-5">
+          <p class="font-display text-lg font-semibold tracking-tight">{t.items.skyline.name}</p>
+          <p class="mt-2 text-sm text-ink/75">{t.items.skyline.use}</p>
+        </div>
+      </li>
+      <li class={card}>
+        <div class:list={[preview, "gap-6 bg-white text-ocean"]}>
+          <RoadArrow kind="straight" class="size-14" />
+          <RoadArrow kind="turn" class="size-14" />
+          <RoadArrow kind="split" class="size-14" />
+        </div>
+        <div class="p-5">
+          <p class="font-display text-lg font-semibold tracking-tight">{t.items.arrows.name}</p>
+          <p class="mt-2 text-sm text-ink/75">{t.items.arrows.use}</p>
+        </div>
+      </li>
+      <li class:list={[card, "sm:col-span-2 lg:col-span-3"]}>
+        <div class:list={[preview, "flex-col gap-4 bg-white font-display text-3xl font-bold tracking-tight sm:flex-row sm:gap-12"]} aria-hidden="true">
+          <Highlight>{t.items.highlight.sample}</Highlight>
+          <LaneUnderline>{t.items.highlight.sample}</LaneUnderline>
+        </div>
+        <div class="p-5">
+          <p class="font-display text-lg font-semibold tracking-tight">{t.items.highlight.name}</p>
+          <p class="mt-2 text-sm text-ink/75">{t.items.highlight.use}</p>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
