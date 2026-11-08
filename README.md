@@ -43,7 +43,7 @@ pnpm dev   # web :3000 · api :8787
 
 **Propuesta de valor.** Mostrar las ofertas elegibles para un monto y un medio de pago, ordenadas por el monto que recibe el usuario, y guiarlo desde la cotización hasta el seguimiento de la orden.
 
-**Referencias.** P2P.me se usó para estudiar compra, venta y operadores que usan medios de pago locales. Koul se revisó en Playwright a 390 px como referencia de jerarquía visual, animación y estados del producto. La propuesta de Kalea combina un primer flujo BOB/USDC, foco móvil y liquidación prevista en Stellar. La diferenciación comercial y la demanda siguen por validar. [P2P.me](https://www.p2p.me/es) · [Koul](https://koul.me/)
+**Referencias.** El modelo de negocio sigue a [P2PKit](https://p2pkit.com): pagos locales con socios verificados y liquidación en USDC verificable on-chain, aquí nativo en Stellar. Koul se revisó en Playwright a 390 px como referencia de jerarquía visual, animación y estados del producto. La propuesta de Kalea combina un primer flujo BOB/USDC, foco móvil y liquidación prevista en Stellar. La diferenciación comercial y la demanda siguen por validar. [P2PKit](https://p2pkit.com) · [Koul](https://koul.me/)
 
 ## 2. Estado del proyecto
 
