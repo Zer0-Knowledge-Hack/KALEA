@@ -12,7 +12,7 @@ README, domain types, API, landing and tests all describe a consumer exchange fo
 
 ## Why
 
-The business model was redefined (2026-11-07/08) and validated with on-chain evidence from p2p.me / P2PKit. The repo must tell the same story before the SCF Instaward application and before building the Soroban escrow.
+The business model was redefined (2026-11-07/08) and validated with on-chain evidence from p2p.me / P2PKit. The repo must tell the same story before building the Soroban escrow. Kalea is an independent project; funding applications are not part of the repository.
 
 ## Business model (source of truth for all tasks)
 
@@ -29,7 +29,7 @@ The business model was redefined (2026-11-07/08) and validated with on-chain evi
 - **Merchant reward** (launch reference 1.5% on buys, configurable per country) is locked in 7-day cycles, which works both as a fraud buffer and as retention. The merchant receipt shows exact order amounts plus a separate "earned X USDC" line.
 - **Kalea revenue is charged ONLY to integrators**: a per-transaction fee debited from a prefunded USDC balance, with volume tiers. End users and merchants never see a Kalea fee. Integrators may add their own markup.
 - **Insurance fund**: about 0.1% per order.
-- **Costs** (no salaries in this phase): about $500/month in operations. The $5K SCF Instaward goes entirely to development.
+- **Costs** (no salaries in this phase): about $500/month in operations.
 - **Legal wording**: describe Kalea as infrastructure where fiat is handled by the merchants. Do NOT claim "Kalea is not responsible". Regulation is out of MVP scope.
 
 ## Scope
@@ -44,10 +44,10 @@ The business model was redefined (2026-11-07/08) and validated with on-chain evi
 
 ## Tasks
 
-- [x] **T1: Docs (English, B2B LATAM)**. Slice branch `feat/b2b-latam-ramp-t1-docs`. Checks: no Spanish characters (`rg` exit 1), no "not responsible" wording, all 18 relative links resolve. About 430 lines. TODOs left in the docs for open product decisions: volume tiers, how the integrator markup is collected, the sell-side reward, timeouts, dispute ownership, the $5K split, pilot corridors. Previous plan: Rewrite `README.md`. Add `docs/business-model.md`, `docs/architecture.md`, `docs/order-lifecycle.md` and `docs/scf-application.md` (the SCF material moves out of the README). Translate `contracts/README.md`, add `legacy/README.md`, and add `.atl/` to `.gitignore`. Route: delegated (2+ non-trivial files). Est. ~350-450 lines.
+- [x] **T1: Docs (English, B2B LATAM)**. Slice branch `feat/b2b-latam-ramp-t1-docs`. Checks: no Spanish characters (`rg` exit 1), no "not responsible" wording, all 18 relative links resolve. About 430 lines. TODOs left in the docs for open product decisions: volume tiers, how the integrator markup is collected, the sell-side reward, timeouts, dispute ownership. Follow-up commit removed all funding-application material (user request: Kalea is an independent project). Previous plan: Rewrite `README.md`. Add `docs/business-model.md`, `docs/architecture.md`, `docs/order-lifecycle.md`. Translate `contracts/README.md`, add `legacy/README.md`, and add `.atl/` to `.gitignore`. Route: delegated (2+ non-trivial files). Est. ~350-450 lines.
 - [ ] **T2: Shared domain model**. Add Country, FiatCurrency, Rail, Integrator and LiquidityProvider. Replace `amountBob` with `fiatAmount` + `fiatCurrency`. Add a quote with the price breakdown, a single `OrderStatus` lifecycle with escrow-first ordering, and LATAM demo data. Rewrite the tests in English. Route: delegated. Est. ~250-300 lines.
 - [ ] **T3: API**. Add `/v1` integrator-scoped quotes and orders, integrator API-key auth (SEP-10 stays for LPs), prefunded balance and fee debit, English JSON errors, env and tests. Route: delegated. Est. ~300-400 lines.
-- [ ] **T4: Web**. English B2B landing (integrators, coverage, how it works, LPs), `lang="en"`, a country picker with an all-in price, integrator/LP dashboard stubs, and English wallet and connect copy. Route: delegated. Est. ~400-500 lines.
+- [ ] **T4: Web**. English B2B landing (integrators, coverage, how it works, LPs), `lang="en"`, a country picker with an all-in price, integrator/LP dashboard stubs, and English wallet and connect copy. Remove the "Roadmap · Stellar Community Fund" eyebrow in `sections.tsx:159` (no funding-application content in the project). Route: delegated. Est. ~400-500 lines.
 
 ## Acceptance criteria
 
@@ -63,4 +63,6 @@ The business model was redefined (2026-11-07/08) and validated with on-chain evi
 
 ## Progress
 
-- 2026-11-08: Repo mapped (explorer). Branch created. T1 next.
+- 2026-11-08: Repo mapped (explorer). Branch created.
+- 2026-11-08: T1 committed `dcee17f` on `feat/b2b-latam-ramp-t1-docs` (9 files, +495/-138). Native assessment: medium, `review_due` true (`slice_budget_reached`). Receipt-driven development is OFF (global), so no review was run (`disabled/unmanaged`). Verification: the writer's self-checks plus a parent spot check (Spanish `rg` exit 1).
+- 2026-11-08: T2 started on `feat/b2b-latam-ramp-t2-domain` (branched from T1).
