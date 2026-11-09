@@ -1,7 +1,7 @@
 ---
-import Merge from "../ornaments/Merge.astro";
-import { useTranslations, type Locale } from "../../i18n";
-import { container, eyebrowLight, h2, sectionY } from "./styles";
+import Merge from '../ornaments/Merge.astro';
+import { useTranslations, type Locale } from '../../i18n';
+import { container, eyebrowLight, h2, sectionY } from './styles';
 
 interface Props {
   locale: Locale;
@@ -14,7 +14,7 @@ const { steps, safety } = copy;
 <section id="how-it-works" class="bg-surface text-ink">
   <div class:list={[container, sectionY]}>
     <p class={eyebrowLight}>{copy.eyebrow}</p>
-    <h2 class:list={[h2, "mt-5 max-w-3xl"]}>{copy.headline}</h2>
+    <h2 class:list={[h2, 'mt-5 max-w-3xl']}>{copy.headline}</h2>
 
     <!-- The route is the layout: a dashed lane with one stop per step, ending in the Apricot release. -->
     <ol class="relative mt-20 grid gap-12 border-l-2 border-dashed border-ocean pl-8 lg:grid-cols-4 lg:gap-10 lg:border-l-0 lg:border-t-2 lg:pl-0">
@@ -26,8 +26,10 @@ const { steps, safety } = copy;
             <span
               aria-hidden="true"
               class:list={[
-                "absolute -left-[41px] top-1 size-4 lg:-top-[9px] lg:left-0",
-                last ? "bg-apricot [clip-path:polygon(50%_0,100%_100%,0_100%)]" : "rounded-full border-[3px] border-ocean bg-surface",
+                'absolute -left-[41px] top-1 size-4 lg:-top-[9px] lg:left-0',
+                last
+                  ? 'bg-apricot [clip-path:polygon(50%_0,100%_100%,0_100%)]'
+                  : 'rounded-full border-[3px] border-ocean bg-surface',
               ]}
             ></span>
             <span class="font-mono text-xs text-muted">0{i + 1}</span>
@@ -44,13 +46,17 @@ const { steps, safety } = copy;
         <figcaption class="pointer-events-none absolute inset-0 max-w-md font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
           <span class="absolute left-0 top-0 -translate-y-full pb-1">{copy.mergeFiat}</span>
           <span class="absolute bottom-0 left-0 translate-y-full pt-1">{copy.mergeCoin}</span>
-          <span class="absolute right-0 top-1/2 -translate-y-[180%] text-ocean">{copy.mergeOrder}</span>
+          <span class="absolute right-0 top-1/2 -translate-y-[180%] text-ocean">
+            {copy.mergeOrder}
+          </span>
         </figcaption>
       </figure>
       <div class="lg:col-span-6 lg:col-start-7">
         <p class={eyebrowLight}>{copy.safetyLabel}</p>
         <ul class="mt-4 divide-y divide-line border-y border-line">
-          {safety.map((s) => <li class="py-3.5 text-lg">{s}</li>)}
+          {safety.map((s) => (
+            <li class="py-3.5 text-lg">{s}</li>
+          ))}
         </ul>
         <p class="mt-5 text-sm text-muted">{copy.note}</p>
       </div>

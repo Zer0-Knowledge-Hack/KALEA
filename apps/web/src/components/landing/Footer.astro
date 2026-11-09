@@ -1,8 +1,8 @@
 ---
-import { Logo } from "../logo";
-import Skyline from "../ornaments/Skyline.astro";
-import { localizedPath, useTranslations, type Locale } from "../../i18n";
-import { REPO } from "./styles";
+import { Logo } from '../logo';
+import Skyline from '../ornaments/Skyline.astro';
+import { localizedPath, useTranslations, type Locale } from '../../i18n';
+import { REPO } from './styles';
 
 interface Props {
   locale: Locale;
@@ -16,12 +16,18 @@ const t = useTranslations(locale);
   <!-- Skyline band on the top edge, rising over the dusk section above. -->
   <Skyline class="absolute inset-x-0 bottom-full h-20 w-full sm:h-28" />
   <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-10 font-mono text-[11px] uppercase tracking-wider text-deep-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-    <a href={localizedPath(locale)} aria-label={t.nav.home} class="normal-case"><Logo size={24} tone="on-dark" /></a>
+    <a href={localizedPath(locale)} aria-label={t.nav.home} class="normal-case">
+      <Logo size={24} tone="on-dark" />
+    </a>
     <span>{t.footer.copyright}</span>
     <span>{t.footer.status}</span>
     <span class="flex gap-6">
-      <a href={localizedPath(locale, "/brand/")} class="hover:text-apricot">{t.footer.brand}</a>
-      <a href={REPO} class="hover:text-apricot">{t.footer.github}</a>
+      <a href={localizedPath(locale, '/brand/')} class="hover:text-apricot">
+        {t.footer.brand}
+      </a>
+      <a href={REPO} class="hover:text-apricot">
+        {t.footer.github}
+      </a>
     </span>
   </div>
 </footer>

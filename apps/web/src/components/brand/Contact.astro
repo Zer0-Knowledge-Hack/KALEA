@@ -1,9 +1,9 @@
 ---
 /** Closing note on dusk: where to ask about co-branding. The footer skyline overlaps the bottom padding. */
-import RoadArrow from "../ornaments/RoadArrow.astro";
-import StreetPerspective from "../ornaments/StreetPerspective.astro";
-import { useTranslations, type Locale } from "../../i18n";
-import { CONTACT_URL, btnPrimary, eyebrow } from "../landing/styles";
+import RoadArrow from '../ornaments/RoadArrow.astro';
+import StreetPerspective from '../ornaments/StreetPerspective.astro';
+import { useTranslations, type Locale } from '../../i18n';
+import { CONTACT_URL, btnPrimary, eyebrow } from '../landing/styles';
 
 interface Props {
   locale: Locale;
@@ -12,11 +12,22 @@ interface Props {
 const t = useTranslations(Astro.props.locale).brand.contact;
 ---
 
-<section id="contact" class="dusk relative scroll-mt-6 overflow-hidden px-4 pb-44 pt-28 text-white sm:px-6 sm:pb-56 sm:pt-36">
-  <StreetPerspective vx={0.5} vy={0.76} street={false} lineOpacity={0.12} class="absolute inset-0 h-full w-full" />
+<section
+  id="contact"
+  class="dusk relative scroll-mt-6 overflow-hidden px-4 pb-44 pt-28 text-white sm:px-6 sm:pb-56 sm:pt-36"
+>
+  <StreetPerspective
+    vx={0.5}
+    vy={0.76}
+    street={false}
+    lineOpacity={0.12}
+    class="absolute inset-0 h-full w-full"
+  />
   <div class="relative mx-auto max-w-3xl text-center">
     <p class={eyebrow}>{t.eyebrow}</p>
-    <h2 class="mt-5 text-[2.5rem] font-bold leading-[1.02] tracking-tight sm:text-6xl">{t.headline}</h2>
+    <h2 class="mt-5 text-[2.5rem] font-bold leading-[1.02] tracking-tight sm:text-6xl">
+      {t.headline}
+    </h2>
     <p class="mx-auto mt-6 max-w-xl text-lg text-deep-soft">{t.sub}</p>
     <!-- On paper the button becomes the plain address. -->
     <p class="mt-8 hidden font-mono text-sm print:block">{CONTACT_URL}</p>

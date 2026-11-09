@@ -1,8 +1,8 @@
 ---
-import RoadArrow from "../ornaments/RoadArrow.astro";
-import StreetPerspective from "../ornaments/StreetPerspective.astro";
-import { useTranslations, type Locale } from "../../i18n";
-import { CONTACT_URL, btnGhostDark, btnPrimary } from "./styles";
+import RoadArrow from '../ornaments/RoadArrow.astro';
+import StreetPerspective from '../ornaments/StreetPerspective.astro';
+import { useTranslations, type Locale } from '../../i18n';
+import { CONTACT_URL, btnGhostDark, btnPrimary } from './styles';
 
 interface Props {
   locale: Locale;
@@ -12,17 +12,32 @@ const copy = useTranslations(Astro.props.locale).cta;
 ---
 
 <!-- Dusk: the only gradient in the system. Perspective lines start below the copy; the footer skyline overlaps the bottom. -->
-<section id="contact" class="dusk relative overflow-hidden px-4 pb-44 pt-28 text-white sm:px-6 sm:pb-56 sm:pt-36">
-  <StreetPerspective vx={0.5} vy={0.76} street={false} lineOpacity={0.12} class="absolute inset-0 h-full w-full" />
+<section
+  id="contact"
+  class="dusk relative overflow-hidden px-4 pb-44 pt-28 text-white sm:px-6 sm:pb-56 sm:pt-36"
+>
+  <StreetPerspective
+    vx={0.5}
+    vy={0.76}
+    street={false}
+    lineOpacity={0.12}
+    class="absolute inset-0 h-full w-full"
+  />
   <div class="relative mx-auto max-w-3xl text-center">
-    <h2 class="text-[2.5rem] font-bold leading-[1.02] tracking-tight sm:text-6xl">{copy.headline}</h2>
+    <h2 class="text-[2.5rem] font-bold leading-[1.02] tracking-tight sm:text-6xl">
+      {copy.headline}
+    </h2>
     <p class="mx-auto mt-6 max-w-md text-lg text-deep-soft">{copy.sub}</p>
     <!-- Road markings: straight ahead to build, a turn to talk to the team. -->
     <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
-      <a href="#developers" data-magnetic class:list={[btnPrimary, "duration-300 ease-[cubic-bezier(.34,1.56,.64,1)]"]}>
+      <a
+        href="#developers"
+        data-magnetic
+        class:list={[btnPrimary, 'duration-300 ease-[cubic-bezier(.34,1.56,.64,1)]']}
+      >
         <RoadArrow kind="straight" class="size-5" /> {copy.start}
       </a>
-      <a href={CONTACT_URL} class:list={[btnGhostDark, "bg-deep/30"]}>
+      <a href={CONTACT_URL} class:list={[btnGhostDark, 'bg-deep/30']}>
         <RoadArrow kind="turn" class="size-5 text-apricot" /> {copy.demo}
       </a>
     </div>

@@ -28,7 +28,7 @@
   /* Screen chrome: header with the language switcher, footer, table of contents and downloads. */
   body > header,
   body > footer,
-  nav[aria-labelledby="brand-toc"],
+  nav[aria-labelledby='brand-toc'],
   a[download] {
     display: none;
   }
