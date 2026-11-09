@@ -21,7 +21,7 @@ type Source = "live" | "demo";
 
 /** Remounts on every value change so the CSS roll-in animation replays. */
 function Rolling({ value }: { value: string }) {
-  return <span class="relative inline-flex overflow-hidden"><span key={value} class="roll">{value}</span></span>;
+  return <span class="relative inline-flex overflow-hidden"><span key={value} data-testid="quote-usdc-amount" class="roll">{value}</span></span>;
 }
 
 /** Live quote from the public demo endpoint; falls back to local demo pricing when the API is unreachable or rate limited. */
@@ -102,7 +102,7 @@ export default function QuoteWidget({ t, intl, countries, rails }: Props) {
         <label class={row}>
           <span class={label}>{side === "buy" ? t.pays : t.receives}</span>
           <span class="mt-1 flex items-baseline gap-3">
-            <input inputMode="decimal" value={amount} onInput={(e) => setAmount(e.currentTarget.value.replace(",", ".").replace(/[^\d.]/g, ""))}
+            <input data-testid="quote-amount-input" inputMode="decimal" value={amount} onInput={(e) => setAmount(e.currentTarget.value.replace(",", ".").replace(/[^\d.]/g, ""))}
               class="w-full min-w-0 bg-transparent font-display text-4xl font-bold tabular-nums outline-none" aria-label={fill(t.amountIn, { currency })} />
             <span class="font-mono text-sm text-muted">{currency}</span>
           </span>

@@ -7,6 +7,10 @@ target/
 .atl/
 .vscode/
 
+# Test artifacts
+apps/web/test-results/
+apps/web/playwright-report/
+
 # Sensitive / never-commit files
 **/.env
 **/.env.*
