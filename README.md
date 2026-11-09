@@ -2,6 +2,8 @@
 
 **B2B fiat <-> USDC ramp infrastructure on Stellar for Latin America.**
 
+Website: [getkalea.pages.dev](https://getkalea.pages.dev)
+
 Kalea lets any business add local-currency on-ramps and off-ramps to its product through one API. Local fiat moves directly between end users and independent merchants (liquidity providers) under their own accounts. Kalea never holds local fiat: it matches orders, prices them per country, and settles only Stellar USDC through a per-order Soroban escrow with fixed amounts.
 
 Kalea is not a consumer exchange, a wallet, or a P2P marketplace. Its customers are the businesses that integrate it.
