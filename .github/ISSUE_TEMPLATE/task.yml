@@ -35,7 +35,10 @@ body:
     id: how-to-verify
     attributes:
       label: How to verify
-      description: Commands or steps the reviewer runs to confirm the acceptance criteria.
+      description: Commands or steps the reviewer runs to confirm acceptance criteria. For code, specify automated test commands. For non-code (docs, security, chore), specify review steps or checks.
+      placeholder: |
+        - For code: `pnpm test`, `cargo test`, or endpoint curl checks.
+        - For non-code: inspect links, review policy diffs, or manual validation steps.
     validations:
       required: true
   - type: textarea

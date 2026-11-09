@@ -7,7 +7,7 @@ Every change reaches `main` through a reviewed pull request, and the maintainer 
 1. **Open an issue** describing the problem or feature, and wait for the maintainer to approve it.
 2. **Branch from `main`** with a typed name: `feat/<topic>`, `fix/<topic>`, `docs/<topic>` or `chore/<topic>`.
 3. **Build with tests first**, commit in small work units using [Conventional Commits](https://www.conventionalcommits.org/).
-4. **Run the checks locally**: `pnpm typecheck`, `pnpm test`, `pnpm --filter @kalea/web build`.
+4. **Run the checks locally**: `pnpm format:check`, `pnpm typecheck`, `pnpm test`, `pnpm --filter @kalea/web build`.
 5. **Open a pull request** to `main`, linking the issue. CI (`check`) must pass, and the maintainer merges.
 
 Pull requests that skip step 1 may be closed without review, even if the code is good. The issue is where scope gets agreed.
@@ -124,7 +124,7 @@ Open the PR against `main`. The description is pre-filled from `.github/pull_req
 
 - **Summary**: what changed and why, plus the linked issue (`Closes #N` or `Refs #N`).
 - **Acceptance criteria**: copy the checklist from the issue and tick what is done.
-- **Verification evidence**: each command you ran and its real output (screenshots, tx hashes if applicable).
+- **Verification evidence**: command outputs demonstrating passing tests (`pnpm test`, `cargo test`), or review/inspection notes for non-code changes (docs, security policies, brand assets).
 - **Notes for reviewers**: anything out of scope or requiring attention.
 - For chained PRs, **Chain context**: position, base, dependencies and a diagram that marks the current PR.
 
@@ -140,8 +140,8 @@ Open the PR against `main`. The description is pre-filled from `.github/pull_req
 
 - [ ] An approved issue exists and is linked.
 - [ ] The branch name and commits follow the conventions above.
-- [ ] `pnpm typecheck`, `pnpm test` and `pnpm --filter @kalea/web build` pass locally.
-- [ ] Behavior changes include tests, with the red step observed when applicable.
+- [ ] `pnpm format:check`, `pnpm typecheck`, `pnpm test` and `pnpm --filter @kalea/web build` pass locally (or `cargo test` if modifying contracts).
+- [ ] Behavior changes include tests, with the red step observed when applicable (or marked N/A for non-code changes).
 - [ ] Docs are updated if behavior, endpoints or the order lifecycle changed.
 - [ ] No Spanish copy, secrets, funding material or "not responsible" claims.
 - [ ] The PR is under ~400 changed lines, or it is chained, or it justifies a size exception.
