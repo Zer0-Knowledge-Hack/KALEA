@@ -95,7 +95,7 @@ CI (`.github/workflows/ci.yml`) runs `pnpm typecheck`, `pnpm test` and the web b
 | Domain model | Countries, fiat currencies, rails, integrators, merchants, all-in quotes, QR payments, one order lifecycle (demo data) | Persistent storage |
 | API | `/v1` integrator API (hashed API keys, corridors, quotes, orders, prefunded balance and fee debit), merchant SEP-10 login, simulated escrow lifecycle with a 7-day reward lock | Real Soroban escrow, webhooks, integrator SDK |
 | Web | English B2B landing, corridor quote demo, merchant dashboard (orders and rewards) | Integrator dashboard |
-| Escrow | Not implemented | Soroban per-order escrow and merchant reward vault ([contracts/README.md](contracts/README.md)) |
+| Escrow | Soroban per-order escrow v1 deployed on testnet; buy, sell, dispute and expiry flows verified on-chain ([deployments](contracts/deployments/testnet.md)) | API integration, mainnet deployment, merchant reward vault and insurance fund contracts ([contracts/README.md](contracts/README.md)) |
 | Identity | Not implemented | KYC, liveness and social-proof providers behind ports |
 | Regulation | Out of MVP scope | Licensing requirements will be assessed per country |
 
