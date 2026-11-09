@@ -6,7 +6,7 @@ import {
   type Integrator,
   type Merchant,
   type Order,
-} from "@kalea/shared";
+} from '@kalea/shared';
 
 /** SHA-256 hex digest of an integrator API key. Raw keys are never stored. */
 export interface IntegratorKey {

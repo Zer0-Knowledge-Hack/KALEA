@@ -1,11 +1,11 @@
 ---
-import type { Rail } from "@kalea/shared";
-import { RAILS } from "../../lib/catalog";
-import { joinList, useTranslations, type Locale } from "../../i18n";
-import Highlight from "../ornaments/Highlight.astro";
-import LaneUnderline from "../ornaments/LaneUnderline.astro";
-import RoadArrow from "../ornaments/RoadArrow.astro";
-import { container, eyebrowLight, h2, sectionY } from "./styles";
+import type { Rail } from '@kalea/shared';
+import { RAILS } from '../../lib/catalog';
+import { joinList, useTranslations, type Locale } from '../../i18n';
+import Highlight from '../ornaments/Highlight.astro';
+import LaneUnderline from '../ornaments/LaneUnderline.astro';
+import RoadArrow from '../ornaments/RoadArrow.astro';
+import { container, eyebrowLight, h2, sectionY } from './styles';
 
 interface Props {
   locale: Locale;
@@ -14,14 +14,16 @@ interface Props {
 const t = useTranslations(Astro.props.locale);
 const copy = t.value;
 // The best-known rails first; only rails a demo corridor already uses are listed (running text, so generic rails are lowercase).
-const featured: Rail[] = ["pix", "spei", "yape", "qr_simple", "bank_transfer"];
-const liveRails = featured.filter((rail) => RAILS.some((r) => r.rail === rail && r.live)).map((rail) => t.railsInline[rail] ?? t.rails[rail]);
+const featured: Rail[] = ['pix', 'spei', 'yape', 'qr_simple', 'bank_transfer'];
+const liveRails = featured
+  .filter((rail) => RAILS.some((r) => r.rail === rail && r.live))
+  .map((rail) => t.railsInline[rail] ?? t.rails[rail]);
 
 // Each road marking says what the statement does: one straight path, many local routes, one turn on-chain.
 const statements = [
-  { arrow: "straight", title: copy.api.title, body: copy.api.body },
-  { arrow: "split", title: copy.rails.title, body: `${joinList(liveRails, t.and)}.` },
-  { arrow: "turn", title: copy.settlement.title, body: copy.settlement.body },
+  { arrow: 'straight', title: copy.api.title, body: copy.api.body },
+  { arrow: 'split', title: copy.rails.title, body: `${joinList(liveRails, t.and)}.` },
+  { arrow: 'turn', title: copy.settlement.title, body: copy.settlement.body },
 ] as const;
 const audiences = copy.audiences;
 ---
@@ -31,10 +33,14 @@ const audiences = copy.audiences;
     <div class="grid gap-8 lg:grid-cols-12 lg:items-end">
       <div class="lg:col-span-7">
         <p class={eyebrowLight}>{copy.eyebrow}</p>
-        <h2 class:list={[h2, "mt-5"]}>{copy.headline.before} <Highlight>{copy.headline.highlight}</Highlight><br class="hidden sm:block" /> {copy.headline.after}</h2>
+        <h2 class:list={[h2, 'mt-5']}>
+          {copy.headline.before} <Highlight>{copy.headline.highlight}</Highlight>
+          <br class="hidden sm:block" /> {copy.headline.after}
+        </h2>
       </div>
       <p class="max-w-sm text-lg text-ink/75 lg:col-span-4 lg:col-start-9">
-        {copy.sub.before} <LaneUnderline>{copy.sub.key}</LaneUnderline>{copy.sub.after}
+        {copy.sub.before} <LaneUnderline>{copy.sub.key}</LaneUnderline>
+        {copy.sub.after}
       </p>
     </div>
 
@@ -52,9 +58,11 @@ const audiences = copy.audiences;
     </ol>
 
     <div class="mt-20 grid gap-4 border-t border-line pt-6 lg:grid-cols-12">
-      <p class:list={[eyebrowLight, "lg:col-span-3"]}>{copy.audienceLabel}</p>
+      <p class:list={[eyebrowLight, 'lg:col-span-3']}>{copy.audienceLabel}</p>
       <ul class="flex flex-wrap gap-x-10 gap-y-3 font-display text-xl font-semibold tracking-tight sm:text-2xl lg:col-span-9">
-        {audiences.map((a) => <li>{a}</li>)}
+        {audiences.map((a) => (
+          <li>{a}</li>
+        ))}
       </ul>
     </div>
   </div>

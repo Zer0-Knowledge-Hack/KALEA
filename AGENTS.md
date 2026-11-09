@@ -35,7 +35,7 @@ Kalea is **B2B fiat <-> USDC ramp infrastructure on Stellar for Latin America**.
 ## 3. Repository layout
 
 | Directory | Role | Stack | Testing |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `packages/shared/` | Domain types, corridor catalogs, order lifecycle state machine | Pure TypeScript | Vitest (Unit) |
 | `apps/api/` | Integrator `/v1` API, merchant SEP-10 challenge/login, demo endpoints | Hono, Node.js, Zod | Vitest (Unit & Integration) |
 | `apps/web/` | B2B integrator landing (en, es, pt-br), interactive quote demo, brand guidelines | Astro 7 (`^7.4.7`), Preact islands, Tailwind 4 | Playwright (E2E) |
@@ -49,48 +49,62 @@ Kalea is **B2B fiat <-> USDC ramp infrastructure on Stellar for Latin America**.
 The repository enforces a structured three-tier testing strategy:
 
 ### 4.1 Unit tests
+
 - **Tools:** **Vitest** (TypeScript packages) & **Cargo test** (Rust contracts).
 - **Scope:** Pure functions, calculations (spreads, amounts, fee tiers), Zod schema validations, and contract invariants.
 - **Commands:**
+
   ```bash
   pnpm test:unit           # Runs unit tests in packages/shared and apps/api (excludes lifecycle)
   cargo test               # Runs Soroban smart contract host unit tests (in contracts/)
   ```
 
 ### 4.2 Integration tests
+
 - **Tool:** **Vitest** with in-memory state and simulated cryptographic signers.
 - **Scope:** Multi-step API flows and complete order lifecycle simulation:
   - Integrator requests `/v1/quotes` -> creates `/v1/orders`.
   - Escrow locking -> simulated fiat payment -> authorization & release.
   - Balance debits, timeout handling, dispute resolution, and error cases.
 - **Command:**
+
   ```bash
   pnpm test:integration    # Runs full lifecycle simulation in apps/api/src/lifecycle.test.ts
   ```
 
 ### 4.3 End-to-end (E2E) tests
+
 - **Tool:** **Playwright** (`@playwright/test`).
 - **Scope:** Full browser testing of the web app (`apps/web`):
   - Page rendering, responsive layouts, navigation.
   - Interactive Preact islands (QuoteWidget country/rail selection, amount calculation, error boundaries).
 - **Prerequisite (one-time on a fresh clone):**
+
   ```bash
   pnpm --filter @kalea/web exec playwright install chromium
   ```
+
 - **Command:**
+
   ```bash
   pnpm test:e2e            # Runs Playwright E2E suite locally against dev server
   ```
+
   *(Note: E2E is currently a local verification tier before opening web-affecting PRs).*
 
 ### 4.4 All checks combined
+
 Before opening any PR, run all checks locally:
+
 ```bash
+pnpm format:check
 pnpm typecheck
 pnpm test
 pnpm --filter @kalea/web build
 cargo test                 # (if modifying contracts)
 ```
+
+For non-code tasks (documentation, security policies, brand assets, CI configuration), automated tests are not required; indicate `N/A: non-code change` in the PR verification evidence checklist.
 
 ---
 
@@ -103,6 +117,7 @@ cargo test                 # (if modifying contracts)
 3. **Branch protection & PR policy:**
    - Direct pushes to `main` are disabled (`allow_force_pushes: false`, `enforce_admins: true`).
    - Every change must enter `main` through a pull request.
+   - PR descriptions must use `.github/pull_request_template.md` with the verification evidence section completed (test outputs or marked N/A).
    - **At least 1 review approval from someone other than the author** is required before merge.
    - All three CI checks (`check`, `contracts`, `scan`) must be green.
 4. **Secret hygiene:**

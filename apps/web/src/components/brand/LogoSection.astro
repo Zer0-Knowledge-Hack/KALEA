@@ -1,8 +1,8 @@
 ---
 /** Logo: mark and lockup, clear space and minimum sizes, then every variant on its own background with downloads. */
-import { useTranslations, type Locale } from "../../i18n";
-import { container, eyebrowLight, h2, sectionY } from "../landing/styles";
-import { LOGO_VARIANTS, asset, downloadLink, pngAsset } from "./assets";
+import { useTranslations, type Locale } from '../../i18n';
+import { container, eyebrowLight, h2, sectionY } from '../landing/styles';
+import { LOGO_VARIANTS, asset, downloadLink, pngAsset } from './assets';
 
 interface Props {
   locale: Locale;
@@ -20,7 +20,7 @@ const fileLabels = { lockup: t.lockupFile, mark: t.markFile, icon: t.iconFile } 
     <div class="grid gap-6 lg:grid-cols-12 lg:items-end">
       <div class="lg:col-span-7">
         <p class={eyebrowLight}>{t.eyebrow}</p>
-        <h2 class:list={[h2, "mt-5"]}>{t.headline}</h2>
+        <h2 class:list={[h2, 'mt-5']}>{t.headline}</h2>
       </div>
       <p class="max-w-md text-lg text-ink/75 lg:col-span-5">{t.sub}</p>
     </div>
@@ -31,7 +31,7 @@ const fileLabels = { lockup: t.lockupFile, mark: t.markFile, icon: t.iconFile } 
         <div class="bg-ocean-100 p-5 outline-2 outline-dashed outline-ocean/50 sm:p-8">
           <div class="bg-white">
             <img
-              src={asset("kalea-lockup.svg")}
+              src={asset('kalea-lockup.svg')}
               alt={t.lockupAlt}
               width={Math.round(40 * LOCKUP_RATIO)}
               height="40"
@@ -39,10 +39,18 @@ const fileLabels = { lockup: t.lockupFile, mark: t.markFile, icon: t.iconFile } 
             />
           </div>
         </div>
-        <figcaption class="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">{t.clearSpaceLabel}</figcaption>
+        <figcaption class="font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
+          {t.clearSpaceLabel}
+        </figcaption>
       </figure>
       <figure class="flex items-center justify-center rounded-card bg-white px-4 py-12 lg:col-span-4">
-        <img src={asset("kalea-mark.svg")} alt={t.markAlt} width="128" height="128" class="size-24 sm:size-32" />
+        <img
+          src={asset('kalea-mark.svg')}
+          alt={t.markAlt}
+          width="128"
+          height="128"
+          class="size-24 sm:size-32"
+        />
       </figure>
     </div>
 
@@ -59,16 +67,16 @@ const fileLabels = { lockup: t.lockupFile, mark: t.markFile, icon: t.iconFile } 
     <ul class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {LOGO_VARIANTS.map((v) => {
         const copy = t.variants[v.key];
-        const square = v.key === "monoWhite" || v.key === "appIcon";
+        const square = v.key === 'monoWhite' || v.key === 'appIcon';
         return (
           <li class="flex flex-col overflow-hidden rounded-card bg-white">
-            <div class:list={["flex h-44 items-center justify-center px-6", v.bg]}>
+            <div class:list={['flex h-44 items-center justify-center px-6', v.bg]}>
               <img
                 src={asset(v.preview)}
                 alt={copy.alt}
                 width={square ? 96 : Math.round(48 * LOCKUP_RATIO)}
                 height={square ? 96 : 48}
-                class:list={["block w-auto max-w-full", square ? "h-24" : "h-12"]}
+                class:list={['block w-auto max-w-full', square ? 'h-24' : 'h-12']}
               />
             </div>
             <div class="flex flex-1 flex-col gap-3 p-5">
@@ -78,13 +86,27 @@ const fileLabels = { lockup: t.lockupFile, mark: t.markFile, icon: t.iconFile } 
               <ul class="mt-auto space-y-2 border-t border-line pt-3 print:hidden">
                 {Object.entries(v.files).map(([kind, file]) => {
                   const label = fileLabels[kind as keyof typeof fileLabels];
-                  const png = file.replace(/\.svg$/, ".png");
+                  const png = file.replace(/\.svg$/, '.png');
                   return (
                     <li class="flex items-baseline justify-between gap-4">
                       <span class="text-sm text-ink/75">{label}</span>
                       <span class="flex gap-4 text-ocean">
-                        <a href={asset(file)} download={file} aria-label={`${label} · ${t.svg}`} class={downloadLink}>{t.svg}</a>
-                        <a href={pngAsset(file)} download={png} aria-label={`${label} · ${t.png}`} class={downloadLink}>{t.png}</a>
+                        <a
+                          href={asset(file)}
+                          download={file}
+                          aria-label={`${label} · ${t.svg}`}
+                          class={downloadLink}
+                        >
+                          {t.svg}
+                        </a>
+                        <a
+                          href={pngAsset(file)}
+                          download={png}
+                          aria-label={`${label} · ${t.png}`}
+                          class={downloadLink}
+                        >
+                          {t.png}
+                        </a>
                       </span>
                     </li>
                   );

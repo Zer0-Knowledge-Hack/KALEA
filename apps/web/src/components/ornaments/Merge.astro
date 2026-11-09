@@ -7,17 +7,45 @@ interface Props {
   class?: string;
 }
 
-const { class: className = "" } = Astro.props;
+const { class: className = '' } = Astro.props;
 const W = 480;
 const H = 200;
 const mx = W * 0.55;
 const my = H / 2;
 ---
 
-<svg viewBox={`0 0 ${W} ${H}`} class:list={["pointer-events-none", className]} aria-hidden="true" focusable="false">
-  <path d={`M4 30 C ${W * 0.35} 30, ${W * 0.35} ${my}, ${mx} ${my}`} fill="none" class="stroke-ocean" stroke-width="3" stroke-dasharray="12 8" />
-  <path d={`M4 ${H - 30} C ${W * 0.35} ${H - 30}, ${W * 0.35} ${my}, ${mx} ${my}`} fill="none" class="stroke-violet" stroke-width="3" stroke-dasharray="12 8" />
-  <line x1={mx} y1={my} x2={W - 30} y2={my} class="stroke-apricot" stroke-width="6" stroke-linecap="round" />
-  <polygon points={`${W - 32},${my - 11} ${W - 6},${my} ${W - 32},${my + 11}`} class="fill-apricot" />
+<svg
+  viewBox={`0 0 ${W} ${H}`}
+  class:list={['pointer-events-none', className]}
+  aria-hidden="true"
+  focusable="false"
+>
+  <path
+    d={`M4 30 C ${W * 0.35} 30, ${W * 0.35} ${my}, ${mx} ${my}`}
+    fill="none"
+    class="stroke-ocean"
+    stroke-width="3"
+    stroke-dasharray="12 8"
+  />
+  <path
+    d={`M4 ${H - 30} C ${W * 0.35} ${H - 30}, ${W * 0.35} ${my}, ${mx} ${my}`}
+    fill="none"
+    class="stroke-violet"
+    stroke-width="3"
+    stroke-dasharray="12 8"
+  />
+  <line
+    x1={mx}
+    y1={my}
+    x2={W - 30}
+    y2={my}
+    class="stroke-apricot"
+    stroke-width="6"
+    stroke-linecap="round"
+  />
+  <polygon
+    points={`${W - 32},${my - 11} ${W - 6},${my} ${W - 32},${my + 11}`}
+    class="fill-apricot"
+  />
   <circle cx={mx} cy={my} r="9" class="fill-white stroke-apricot" stroke-width="4" />
 </svg>

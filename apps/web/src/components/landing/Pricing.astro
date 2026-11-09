@@ -1,9 +1,9 @@
 ---
-import { QUOTE_TTL_MS } from "@kalea/shared";
-import { DEMO_COUNTRIES } from "../../lib/catalog";
-import HeroNumber from "../ornaments/HeroNumber.astro";
-import { useTranslations, type Locale } from "../../i18n";
-import { container, eyebrowLight, h2, sectionY } from "./styles";
+import { QUOTE_TTL_MS } from '@kalea/shared';
+import { DEMO_COUNTRIES } from '../../lib/catalog';
+import HeroNumber from '../ornaments/HeroNumber.astro';
+import { useTranslations, type Locale } from '../../i18n';
+import { container, eyebrowLight, h2, sectionY } from './styles';
 
 interface Props {
   locale: Locale;
@@ -14,24 +14,32 @@ const quoteMinutes = QUOTE_TTL_MS / 60_000;
 ---
 
 <section id="pricing" class="bg-white text-ink">
-  <div class:list={[container, sectionY, "grid gap-16 lg:grid-cols-12"]}>
+  <div class:list={[container, sectionY, 'grid gap-16 lg:grid-cols-12']}>
     <div class="lg:col-span-5">
       <p class={eyebrowLight}>{copy.eyebrow}</p>
-      <h2 class:list={[h2, "mt-5"]}>{copy.headline}</h2>
+      <h2 class:list={[h2, 'mt-5']}>{copy.headline}</h2>
       <p class="mt-6 max-w-sm text-lg text-ink/75">{copy.sub}</p>
     </div>
     <div class="lg:col-span-6 lg:col-start-7">
       <dl class="border-b border-line">
         {copy.terms.map(({ term: k, detail: v }) => (
           <div class="grid gap-1 border-t border-line py-5 sm:grid-cols-[9rem_1fr] sm:gap-6">
-            <dt class="font-mono text-[11px] uppercase tracking-[0.16em] text-ocean sm:pt-1">{k}</dt>
+            <dt class="font-mono text-[11px] uppercase tracking-[0.16em] text-ocean sm:pt-1">
+              {k}
+            </dt>
             <dd class="text-lg">{v}</dd>
           </div>
         ))}
       </dl>
       <div class="mt-14 grid grid-cols-2 gap-8">
-        <HeroNumber label={copy.quoteValidity}><span data-count={quoteMinutes} data-suffix={` ${copy.minutes}`}>{quoteMinutes} {copy.minutes}</span></HeroNumber>
-        <HeroNumber label={copy.corridors}><span data-count={DEMO_COUNTRIES.length}>{DEMO_COUNTRIES.length}</span></HeroNumber>
+        <HeroNumber label={copy.quoteValidity}>
+          <span data-count={quoteMinutes} data-suffix={` ${copy.minutes}`}>
+            {quoteMinutes} {copy.minutes}
+          </span>
+        </HeroNumber>
+        <HeroNumber label={copy.corridors}>
+          <span data-count={DEMO_COUNTRIES.length}>{DEMO_COUNTRIES.length}</span>
+        </HeroNumber>
       </div>
     </div>
   </div>

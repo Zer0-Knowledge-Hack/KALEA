@@ -7,7 +7,7 @@ interface Props {
   class?: string;
 }
 
-const { class: className = "" } = Astro.props;
+const { class: className = '' } = Astro.props;
 
 const W = 1440;
 const H = 120;
@@ -22,9 +22,21 @@ function building(x: number, w: number, h: number, cutLeft: boolean): Building {
   const top = H - h;
   const c = Math.min(w * 0.4, 22);
   const pts = cutLeft
-    ? [[x, H], [x, top + c], [x + c, top], [x + w, top], [x + w, H]]
-    : [[x, H], [x, top], [x + w - c, top], [x + w, top + c], [x + w, H]];
-  return { points: pts.map((p) => p.join(",")).join(" ") };
+    ? [
+        [x, H],
+        [x, top + c],
+        [x + c, top],
+        [x + w, top],
+        [x + w, H],
+      ]
+    : [
+        [x, H],
+        [x, top],
+        [x + w - c, top],
+        [x + w, top + c],
+        [x + w, H],
+      ];
+  return { points: pts.map((p) => p.join(',')).join(' ') };
 }
 
 function row(offset: number, scale: number, gap: number, streets: boolean) {
@@ -50,8 +62,20 @@ const back = row(3, 1, 4, false);
 const front = row(0, 0.62, 6, true);
 ---
 
-<svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMax slice" class:list={["pointer-events-none", className]} aria-hidden="true" focusable="false">
-  {back.out.map((b) => <polygon points={b.points} fill="#1A3A59" />)}
-  {front.out.map((b) => <polygon points={b.points} fill="#102941" />)}
-  {front.roads.map((r) => <polygon points={r.points} fill="#EE9E4F" />)}
+<svg
+  viewBox={`0 0 ${W} ${H}`}
+  preserveAspectRatio="xMidYMax slice"
+  class:list={['pointer-events-none', className]}
+  aria-hidden="true"
+  focusable="false"
+>
+  {back.out.map((b) => (
+    <polygon points={b.points} fill="#1A3A59" />
+  ))}
+  {front.out.map((b) => (
+    <polygon points={b.points} fill="#102941" />
+  ))}
+  {front.roads.map((r) => (
+    <polygon points={r.points} fill="#EE9E4F" />
+  ))}
 </svg>

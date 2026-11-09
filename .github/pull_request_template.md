@@ -14,7 +14,12 @@ Closes #
 
 ## Verification evidence
 
-<!-- The issue's "How to verify" steps and their real output: commands run, screenshots, tx hashes. -->
+<!-- Evidence supporting the change:
+- For code: command outputs from tests (`pnpm test`, `cargo test`), logs, or transaction hashes.
+- For non-code (docs, security, chore): link/wording checks, screenshots, or policy review notes. -->
+
+- [ ] Automated tests passing locally (`pnpm test` and/or `cargo test`)
+- [ ] Or N/A: non-code change (documentation, security policy, brand asset, CI configuration)
 
 ```
 ```

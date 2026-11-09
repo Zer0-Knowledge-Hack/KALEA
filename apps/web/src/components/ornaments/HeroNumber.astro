@@ -2,17 +2,32 @@
 /** Hero number: one large Funnel Display figure with a dashed Apricot lane underline and a mono label. */
 interface Props {
   label: string;
-  tone?: "light" | "dark";
+  tone?: 'light' | 'dark';
   class?: string;
 }
 
-const { label, tone = "light", class: className = "" } = Astro.props;
+const { label, tone = 'light', class: className = '' } = Astro.props;
 ---
 
 <div class={className}>
-  <p class:list={["font-display text-5xl font-bold leading-none tracking-tight tabular-nums sm:text-6xl", tone === "light" ? "text-ocean" : "text-white"]}>
+  <p
+    class:list={[
+      'font-display text-5xl font-bold leading-none tracking-tight tabular-nums sm:text-6xl',
+      tone === 'light' ? 'text-ocean' : 'text-white',
+    ]}
+  >
     <slot />
   </p>
-  <span aria-hidden="true" class="mt-3 block h-0 w-16 border-b-[3px] border-dashed border-apricot"></span>
-  <p class:list={["mt-3 font-mono text-[11px] uppercase tracking-[0.14em]", tone === "light" ? "text-muted" : "text-deep-muted"]}>{label}</p>
+  <span
+    aria-hidden="true"
+    class="mt-3 block h-0 w-16 border-b-[3px] border-dashed border-apricot"
+  ></span>
+  <p
+    class:list={[
+      'mt-3 font-mono text-[11px] uppercase tracking-[0.14em]',
+      tone === 'light' ? 'text-muted' : 'text-deep-muted',
+    ]}
+  >
+    {label}
+  </p>
 </div>

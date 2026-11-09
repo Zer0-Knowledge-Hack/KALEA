@@ -1,11 +1,11 @@
 ---
-import { COUNTRIES, COUNTRY_CATALOG } from "@kalea/shared";
-import { DEMO_COUNTRIES } from "../../lib/catalog";
-import { useTranslations, type Locale } from "../../i18n";
-import CityGrid from "../ornaments/CityGrid.astro";
-import Intersection from "../ornaments/Intersection.astro";
-import StatusLabel from "./StatusLabel.astro";
-import { container, eyebrowLight, h2, sectionY } from "./styles";
+import { COUNTRIES, COUNTRY_CATALOG } from '@kalea/shared';
+import { DEMO_COUNTRIES } from '../../lib/catalog';
+import { useTranslations, type Locale } from '../../i18n';
+import CityGrid from '../ornaments/CityGrid.astro';
+import Intersection from '../ornaments/Intersection.astro';
+import StatusLabel from './StatusLabel.astro';
+import { container, eyebrowLight, h2, sectionY } from './styles';
 
 interface Props {
   locale: Locale;
@@ -15,8 +15,10 @@ const t = useTranslations(Astro.props.locale);
 const copy = t.coverage;
 const nextGroups = copy.nextGroups;
 // Demo corridors first, then planned ones, each in catalog order.
-const rows = [...COUNTRIES].sort((a, b) => Number(DEMO_COUNTRIES.includes(b)) - Number(DEMO_COUNTRIES.includes(a)));
-const cols = "sm:grid-cols-[minmax(0,3fr)_minmax(0,1.3fr)_minmax(0,4fr)_6rem]";
+const rows = [...COUNTRIES].sort(
+  (a, b) => Number(DEMO_COUNTRIES.includes(b)) - Number(DEMO_COUNTRIES.includes(a)),
+);
+const cols = 'sm:grid-cols-[minmax(0,3fr)_minmax(0,1.3fr)_minmax(0,4fr)_6rem]';
 ---
 
 <section id="coverage" class="bg-white text-ink">
@@ -24,7 +26,7 @@ const cols = "sm:grid-cols-[minmax(0,3fr)_minmax(0,1.3fr)_minmax(0,4fr)_6rem]";
     <div class="grid gap-8 lg:grid-cols-12 lg:items-end">
       <div class="lg:col-span-7">
         <p class={eyebrowLight}>{copy.eyebrow}</p>
-        <h2 class:list={[h2, "mt-5"]}>{copy.headline}</h2>
+        <h2 class:list={[h2, 'mt-5']}>{copy.headline}</h2>
       </div>
       <p class="max-w-sm text-lg text-ink/75 lg:col-span-4 lg:col-start-9">{copy.sub}</p>
     </div>
@@ -34,23 +36,44 @@ const cols = "sm:grid-cols-[minmax(0,3fr)_minmax(0,1.3fr)_minmax(0,4fr)_6rem]";
       <!-- On phones it stays as a small mark above the table instead of disappearing. -->
       <CityGrid class="w-20 lg:col-span-3 lg:w-full lg:max-w-[17rem]" />
       <div class="min-w-0 lg:col-span-8 lg:col-start-5">
-        <div aria-hidden="true" class:list={["hidden gap-x-6 pb-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted sm:grid", cols]}>
-          {copy.columns.map((c) => <span>{c}</span>)}
+        <div
+          aria-hidden="true"
+          class:list={[
+            'hidden gap-x-6 pb-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted sm:grid',
+            cols,
+          ]}
+        >
+          {copy.columns.map((c) => (
+            <span>{c}</span>
+          ))}
         </div>
         <ul class="border-b border-line">
           {rows.map((c) => {
             const live = DEMO_COUNTRIES.includes(c);
             return (
-              <li class:list={["grid grid-cols-[auto_1fr_auto] items-baseline gap-x-4 gap-y-1 border-t border-line py-4 sm:gap-x-6", cols]}>
-                <span class:list={["text-xl font-semibold tracking-tight", { "text-ink/70": !live }]}>{t.countries[c]}</span>
+              <li
+                class:list={[
+                  'grid grid-cols-[auto_1fr_auto] items-baseline gap-x-4 gap-y-1 border-t border-line py-4 sm:gap-x-6',
+                  cols,
+                ]}
+              >
+                <span
+                  class:list={['text-xl font-semibold tracking-tight', { 'text-ink/70': !live }]}
+                >
+                  {t.countries[c]}
+                </span>
                 <span class="font-mono text-sm text-muted">{COUNTRY_CATALOG[c].currency}</span>
-                <span class="order-last col-span-3 text-ink/75 sm:order-none sm:col-span-1">{COUNTRY_CATALOG[c].rails.map((r) => t.rails[r]).join(", ")}</span>
+                <span class="order-last col-span-3 text-ink/75 sm:order-none sm:col-span-1">
+                  {COUNTRY_CATALOG[c].rails.map((r) => t.rails[r]).join(', ')}
+                </span>
                 <StatusLabel live={live} label={live ? copy.live : copy.next} />
               </li>
             );
           })}
         </ul>
-        <p class="mt-4 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">{copy.legend}</p>
+        <p class="mt-4 font-mono text-[11px] uppercase tracking-[0.16em] text-muted">
+          {copy.legend}
+        </p>
       </div>
     </div>
 
