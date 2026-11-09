@@ -1,8 +1,8 @@
 ---
 /** Do and don't: plain typographic lists from brand/README.md plus four small misuse examples. */
-import { fill, useTranslations, type Locale } from "../../i18n";
-import { container, eyebrowLight, h2, sectionY } from "../landing/styles";
-import { asset } from "./assets";
+import { fill, useTranslations, type Locale } from '../../i18n';
+import { container, eyebrowLight, h2, sectionY } from '../landing/styles';
+import { asset } from './assets';
 
 interface Props {
   locale: Locale;
@@ -11,17 +11,17 @@ interface Props {
 const t = useTranslations(Astro.props.locale).brand.rules;
 // Each example distorts the real lockup with CSS only; the source file stays untouched.
 const examples = [
-  { label: t.examples.recolor, style: "filter:hue-rotate(150deg) saturate(1.4)" },
-  { label: t.examples.stretch, style: "transform:scale(1.35,0.7)" },
-  { label: t.examples.rotate, style: "transform:rotate(-14deg)" },
-  { label: t.examples.effects, style: "filter:drop-shadow(4px 6px 3px rgba(18,26,33,.55))" },
+  { label: t.examples.recolor, style: 'filter:hue-rotate(150deg) saturate(1.4)' },
+  { label: t.examples.stretch, style: 'transform:scale(1.35,0.7)' },
+  { label: t.examples.rotate, style: 'transform:rotate(-14deg)' },
+  { label: t.examples.effects, style: 'filter:drop-shadow(4px 6px 3px rgba(18,26,33,.55))' },
 ];
 ---
 
 <section id="rules" class="scroll-mt-6 bg-surface text-ink">
   <div class:list={[container, sectionY]}>
     <p class={eyebrowLight}>{t.eyebrow}</p>
-    <h2 class:list={[h2, "mt-5"]}>{t.headline}</h2>
+    <h2 class:list={[h2, 'mt-5']}>{t.headline}</h2>
 
     <div class="mt-16 grid gap-12 lg:grid-cols-2">
       <div>
@@ -29,18 +29,24 @@ const examples = [
         <ul class="mt-2">
           {t.do.map((item) => (
             <li class="flex gap-4 border-b border-line py-4">
-              <span aria-hidden="true" class="mt-0.5 font-mono text-success">✓</span>
+              <span aria-hidden="true" class="mt-0.5 font-mono text-success">
+                ✓
+              </span>
               <span>{item}</span>
             </li>
           ))}
         </ul>
       </div>
       <div>
-        <h3 class="border-b border-ink pb-3 text-2xl font-semibold tracking-tight">{t.dontTitle}</h3>
+        <h3 class="border-b border-ink pb-3 text-2xl font-semibold tracking-tight">
+          {t.dontTitle}
+        </h3>
         <ul class="mt-2">
           {t.dont.map((item) => (
             <li class="flex gap-4 border-b border-line py-4">
-              <span aria-hidden="true" class="mt-0.5 font-mono text-error">✕</span>
+              <span aria-hidden="true" class="mt-0.5 font-mono text-error">
+                ✕
+              </span>
               <span>{item}</span>
             </li>
           ))}
@@ -48,13 +54,15 @@ const examples = [
       </div>
     </div>
 
-    <h3 class="mt-20 font-mono text-[11px] uppercase tracking-[0.2em] text-ocean">{t.examplesLabel}</h3>
+    <h3 class="mt-20 font-mono text-[11px] uppercase tracking-[0.2em] text-ocean">
+      {t.examplesLabel}
+    </h3>
     <ul class="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
       {examples.map((e) => (
         <li class="overflow-hidden rounded-card bg-white">
           <div class="flex h-32 items-center justify-center overflow-hidden px-6">
             <img
-              src={asset("kalea-lockup.svg")}
+              src={asset('kalea-lockup.svg')}
               alt={fill(t.exampleAlt, { example: e.label })}
               width="137"
               height="32"

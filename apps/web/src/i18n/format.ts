@@ -6,4 +6,6 @@ export const fill = (template: string, values: Record<string, string>): string =
 
 /** Inline list without a serial comma: "a, b and c". */
 export const joinList = (items: string[], and: string): string =>
-  items.length < 2 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} ${and} ${items[items.length - 1]}`;
+  items.length < 2
+    ? (items[0] ?? '')
+    : `${items.slice(0, -1).join(', ')} ${and} ${items[items.length - 1]}`;

@@ -2,12 +2,15 @@
 /** City grid, top view: rounded blocks with one Apricot route through the streets. Decorative only. */
 interface Props {
   /** "light" for white and Surface, "dark" for Deep backgrounds. */
-  tone?: "light" | "dark";
+  tone?: 'light' | 'dark';
   class?: string;
 }
 
-const { tone = "light", class: className = "" } = Astro.props;
-const colors = tone === "light" ? { block: "#DFEBF6", marker: "#1E578F", ring: "#FFFFFF" } : { block: "#1A3A59", marker: "#FFFFFF", ring: "#102941" };
+const { tone = 'light', class: className = '' } = Astro.props;
+const colors =
+  tone === 'light'
+    ? { block: '#DFEBF6', marker: '#1E578F', ring: '#FFFFFF' }
+    : { block: '#1A3A59', marker: '#FFFFFF', ring: '#102941' };
 
 const N = 5;
 const BLOCK = 56;
@@ -15,7 +18,10 @@ const STREET = 16;
 const PAD = 12;
 const step = BLOCK + STREET;
 const size = PAD * 2 + N * BLOCK + (N - 1) * STREET;
-const blocks = Array.from({ length: N * N }, (_, i) => ({ x: PAD + (i % N) * step, y: PAD + Math.floor(i / N) * step }));
+const blocks = Array.from({ length: N * N }, (_, i) => ({
+  x: PAD + (i % N) * step,
+  y: PAD + Math.floor(i / N) * step,
+}));
 // Street centerlines sit between blocks: PAD + BLOCK + STREET / 2 + k * step.
 const lane = (k: number) => PAD + BLOCK + STREET / 2 + k * step;
 const route = [
@@ -26,12 +32,36 @@ const route = [
   [lane(3), lane(1)],
   [lane(3), 0],
 ];
-const points = route.map(([x, y]) => `${x},${y}`).join(" ");
+const points = route.map(([x, y]) => `${x},${y}`).join(' ');
 ---
 
-<svg viewBox={`0 0 ${size} ${size}`} class:list={["pointer-events-none", className]} aria-hidden="true" focusable="false">
-  {blocks.map(({ x, y }) => <rect x={x} y={y} width={BLOCK} height={BLOCK} rx="8" fill={colors.block} />)}
-  <polyline points={points} fill="none" stroke="#EE9E4F" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
-  <circle cx={lane(0)} cy={size - PAD - 6} r="7" fill={colors.marker} stroke={colors.ring} stroke-width="3" />
-  <polygon points={`${lane(3)},${PAD - 2} ${lane(3) + 9},${PAD + 16} ${lane(3) - 9},${PAD + 16}`} fill={colors.marker} />
+<svg
+  viewBox={`0 0 ${size} ${size}`}
+  class:list={['pointer-events-none', className]}
+  aria-hidden="true"
+  focusable="false"
+>
+  {blocks.map(({ x, y }) => (
+    <rect x={x} y={y} width={BLOCK} height={BLOCK} rx="8" fill={colors.block} />
+  ))}
+  <polyline
+    points={points}
+    fill="none"
+    stroke="#EE9E4F"
+    stroke-width="5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle
+    cx={lane(0)}
+    cy={size - PAD - 6}
+    r="7"
+    fill={colors.marker}
+    stroke={colors.ring}
+    stroke-width="3"
+  />
+  <polygon
+    points={`${lane(3)},${PAD - 2} ${lane(3) + 9},${PAD + 16} ${lane(3) - 9},${PAD + 16}`}
+    fill={colors.marker}
+  />
 </svg>

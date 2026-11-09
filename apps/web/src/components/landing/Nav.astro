@@ -1,7 +1,7 @@
 ---
-import { Logo } from "../logo";
-import { LOCALES, LOCALE_META, localizedPath, useTranslations, type Locale } from "../../i18n";
-import { CONTACT_URL } from "./styles";
+import { Logo } from '../logo';
+import { LOCALES, LOCALE_META, localizedPath, useTranslations, type Locale } from '../../i18n';
+import { CONTACT_URL } from './styles';
 
 interface Props {
   locale: Locale;
@@ -11,15 +11,19 @@ const { locale } = Astro.props;
 const { nav } = useTranslations(locale);
 // Anchors are identical in every locale.
 const links = [
-  [nav.product, "#product"],
-  [nav.howItWorks, "#how-it-works"],
-  [nav.coverage, "#coverage"],
-  [nav.developers, "#developers"],
-  [nav.pricing, "#pricing"],
-  [nav.faq, "#faq"],
+  [nav.product, '#product'],
+  [nav.howItWorks, '#how-it-works'],
+  [nav.coverage, '#coverage'],
+  [nav.developers, '#developers'],
+  [nav.pricing, '#pricing'],
+  [nav.faq, '#faq'],
 ];
 // Language switcher: plain mono text links; landing.ts appends the section in view on click.
-const languages = LOCALES.map((l) => ({ ...LOCALE_META[l], href: localizedPath(l), current: l === locale }));
+const languages = LOCALES.map((l) => ({
+  ...LOCALE_META[l],
+  href: localizedPath(l),
+  current: l === locale,
+}));
 ---
 
 <header
@@ -27,32 +31,55 @@ const languages = LOCALES.map((l) => ({ ...LOCALE_META[l], href: localizedPath(l
   class="fixed inset-x-0 top-0 z-50 border-b border-deep-line bg-deep/95 backdrop-blur-lg transition-transform duration-300 ease-[cubic-bezier(.22,1,.36,1)]"
 >
   <nav class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-    <a href={localizedPath(locale)} aria-label={nav.home} class="shrink-0"><Logo tone="on-dark" /></a>
+    <a href={localizedPath(locale)} aria-label={nav.home} class="shrink-0">
+      <Logo tone="on-dark" />
+    </a>
     <ul class="hidden gap-5 lg:flex xl:gap-7">
       {links.map(([t, h]) => (
         <li>
-          <a href={h} class="whitespace-nowrap text-sm text-deep-soft transition hover:text-white">{t}</a>
+          <a href={h} class="whitespace-nowrap text-sm text-deep-soft transition hover:text-white">
+            {t}
+          </a>
         </li>
       ))}
     </ul>
     <div class="flex items-center gap-3 sm:gap-5">
-      <ul aria-label={nav.language} class="hidden items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] sm:flex">
+      <ul
+        aria-label={nav.language}
+        class="hidden items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.16em] sm:flex"
+      >
         {languages.map((l, i) => (
           <li class="flex items-center gap-1.5">
-            {i > 0 && <span aria-hidden="true" class="text-deep-muted">·</span>}
+            {i > 0 && (
+              <span aria-hidden="true" class="text-deep-muted">
+                ·
+              </span>
+            )}
             <a
               href={l.href}
               hreflang={l.hreflang}
               lang={l.htmlLang}
               aria-label={l.name}
-              aria-current={l.current ? "true" : undefined}
+              aria-current={l.current ? 'true' : undefined}
               data-locale-link
-              class:list={["transition hover:text-white", l.current ? "text-white underline decoration-apricot underline-offset-[6px]" : "text-deep-muted"]}
-            >{l.label}</a>
+              class:list={[
+                'transition hover:text-white',
+                l.current
+                  ? 'text-white underline decoration-apricot underline-offset-[6px]'
+                  : 'text-deep-muted',
+              ]}
+            >
+              {l.label}
+            </a>
           </li>
         ))}
       </ul>
-      <a href={CONTACT_URL} class="whitespace-nowrap rounded-[6px] border border-white/40 px-4 py-2 text-sm font-semibold text-white transition hover:border-white">{nav.cta}</a>
+      <a
+        href={CONTACT_URL}
+        class="whitespace-nowrap rounded-[6px] border border-white/40 px-4 py-2 text-sm font-semibold text-white transition hover:border-white"
+      >
+        {nav.cta}
+      </a>
       <button
         id="nav-toggle"
         aria-label={nav.menu}
@@ -70,25 +97,44 @@ const languages = LOCALES.map((l) => ({ ...LOCALE_META[l], href: localizedPath(l
   <div id="nav-menu" hidden class="px-4 lg:hidden">
     <ul>
       {links.map(([t, h], i) => (
-        <li class="fade-up border-t border-deep-line first:border-0" style={`animation-delay:${0.05 * i}s`}>
-          <a href={h} class="block py-4 text-2xl font-semibold">{t}</a>
+        <li
+          class="fade-up border-t border-deep-line first:border-0"
+          style={`animation-delay:${0.05 * i}s`}
+        >
+          <a href={h} class="block py-4 text-2xl font-semibold">
+            {t}
+          </a>
         </li>
       ))}
     </ul>
     <!-- On phones the switcher lives in the menu; from sm up it sits in the bar. -->
-    <ul aria-label={nav.language} class="flex items-center gap-3 border-t border-deep-line py-5 font-mono text-xs uppercase tracking-[0.16em] sm:hidden">
+    <ul
+      aria-label={nav.language}
+      class="flex items-center gap-3 border-t border-deep-line py-5 font-mono text-xs uppercase tracking-[0.16em] sm:hidden"
+    >
       {languages.map((l, i) => (
         <li class="flex items-center gap-3">
-          {i > 0 && <span aria-hidden="true" class="text-deep-muted">·</span>}
+          {i > 0 && (
+            <span aria-hidden="true" class="text-deep-muted">
+              ·
+            </span>
+          )}
           <a
             href={l.href}
             hreflang={l.hreflang}
             lang={l.htmlLang}
             aria-label={l.name}
-            aria-current={l.current ? "true" : undefined}
+            aria-current={l.current ? 'true' : undefined}
             data-locale-link
-            class:list={["py-2", l.current ? "text-white underline decoration-apricot underline-offset-[6px]" : "text-deep-muted"]}
-          >{l.label}</a>
+            class:list={[
+              'py-2',
+              l.current
+                ? 'text-white underline decoration-apricot underline-offset-[6px]'
+                : 'text-deep-muted',
+            ]}
+          >
+            {l.label}
+          </a>
         </li>
       ))}
     </ul>

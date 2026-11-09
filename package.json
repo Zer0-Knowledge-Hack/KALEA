@@ -8,6 +8,8 @@
     "dev:api": "pnpm --filter @kalea/api dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "pnpm -r test",
     "test:unit": "pnpm -r --if-present test:unit",
     "test:integration": "pnpm --filter @kalea/api test:integration",
@@ -15,6 +17,8 @@
     "brand:kit": "node scripts/brand-kit.mjs"
   },
   "devDependencies": {
+    "prettier": "^3.9.10",
+    "prettier-plugin-astro": "^1.1.2",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
   }
