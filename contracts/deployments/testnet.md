@@ -1,5 +1,35 @@
 # Testnet deployments
 
+> **Pending redeploy (reward vault + insurance fund):** The escrow below points at plain reward and
+> insurance accounts and predates `reward-vault/` and `insurance-fund/`. The next deployment must:
+>
+> 1. deploy `kalea-insurance-fund` with the admin (multisig) and USDC token;
+> 2. deploy `kalea-reward-vault` with the admin, arbiter and USDC token;
+> 3. deploy `kalea-escrow` with the new vault and fund addresses;
+> 4. call `set_escrow(<escrow>)` on the vault so it accepts `credit` calls.
+>
+> ```bash
+> FUND_ID=$(stellar contract deploy \
+>   --wasm target/wasm32v1-none/release/kalea_insurance_fund.wasm \
+>   --source-account "$ADMIN" --network testnet -- \
+>   --admin "$ADMIN" --token "$USDC")
+> VAULT_ID=$(stellar contract deploy \
+>   --wasm target/wasm32v1-none/release/kalea_reward_vault.wasm \
+>   --source-account "$ADMIN" --network testnet -- \
+>   --admin "$ADMIN" --arbiter "$ARBITER" --token "$USDC")
+> ESCROW_ID=$(stellar contract deploy \
+>   --wasm target/wasm32v1-none/release/kalea_escrow.wasm \
+>   --source-account "$ADMIN" --network testnet -- \
+>   --admin "$ADMIN" --arbiter "$ARBITER" --operator "$OPERATOR" --token "$USDC" \
+>   --reward-vault "$VAULT_ID" --insurance-fund "$FUND_ID")
+> stellar contract invoke --id "$VAULT_ID" --source-account "$ADMIN" --network testnet -- \
+>   set_escrow --escrow "$ESCROW_ID"
+> ```
+>
+> A release immediately credits the vault. The withdrawal rehearsal requires a ledger timestamp at
+> least seven days after the credit, so it is scheduled as a follow-up. Explorer links replace this
+> note once the deployment is executed.
+
 ## Escrow v1 (current, canonical lifecycle)
 
 Date: 2026-11-07. soroban-sdk 28, stellar-cli 28.0.0. Lifecycle: `escrow_locked -> fiat_sent -> released`, plus `cancelled`, `expired`, `disputed`.

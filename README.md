@@ -49,7 +49,7 @@ KALEA/
 │   └── api/        # Hono API: quotes, orders, SEP-10 auth
 ├── packages/
 │   └── shared/     # Shared domain types and demo data
-├── contracts/      # Soroban escrow v1 (reward vault, insurance pending)
+├── contracts/      # Soroban escrow, merchant reward vault and insurance fund
 ├── legacy/         # Frozen historical prototype
 ├── brand/          # Logo and visual identity explorations
 └── docs/           # Product and technical documentation

@@ -1,6 +1,6 @@
-# Soroban contracts: kalea-escrow
+# Soroban contracts: escrow, reward vault and insurance fund
 
-> **Status:** `escrow/` v1 implements the canonical lifecycle below, with 43 tests, and is deployed on testnet ([deployments/testnet.md](deployments/testnet.md)). The reward vault and insurance fund contracts are still pending; see [Remaining gaps](#4-remaining-gaps).
+> **Status:** `escrow/`, `reward-vault/` and `insurance-fund/` implement the lifecycle below. The reward vault credits releases into a per-merchant ledger, and the insurance fund pays resolved dispute losses. A testnet redeploy of the new set is pending; see [Remaining gaps](#4-remaining-gaps).
 
 ---
 
@@ -34,7 +34,7 @@ Per-order USDC escrow following [docs/order-lifecycle.md](../docs/order-lifecycl
 |---|---|---|
 | `lock` | depositor | Locks recipient amount + reward + insurance, all fixed at creation. Merchant must be the depositor (buy) or the recipient (sell). |
 | `mark_paid` | recipient | `escrow_locked -> fiat_sent` before `payment_timeout`, stores a 32-byte evidence hash. |
-| `release` | depositor | `fiat_sent` or `disputed -> released`: recipient amount to the recipient, reward to the reward vault, insurance to the insurance fund. |
+| `release` | depositor | `fiat_sent` or `disputed -> released`: recipient amount to the recipient, reward transferred to the reward vault and credited to the merchant, insurance to the insurance fund. |
 | `cancel` | recipient or operator | `escrow_locked -> cancelled`, full refund. Not allowed after fiat is sent. |
 | `expire` | anyone | `escrow_locked` after `payment_timeout -> expired`, full refund. Never refunds after fiat is sent. |
 | `dispute` | either party; anyone after `confirmation_timeout` | `fiat_sent -> disputed`. |
@@ -43,6 +43,8 @@ Per-order USDC escrow following [docs/order-lifecycle.md](../docs/order-lifecycl
 ### Security & Trust assumptions
 
 - **Security:** `require_auth` per role, terminal states, state saved before transfers, reward capped at 3% and insurance at 0.5% of the recipient amount, minimum order of 1 USDC, timeouts between 60 s and 7 days, pause blocks only new locks, single token set in the constructor, external reference unique per depositor (nobody can squat another party's reference), checked arithmetic, two-step admin transfer, events for every role and config change. The Kalea fee is not in the escrow: it is debited from the integrator's prefunded balance.
+- **Reward vault:** only the registered escrow can credit, merchants withdraw only vested rewards, and the arbiter can slash unvested rewards only. Vested rewards are never moved by a slash.
+- **Insurance fund:** only the admin can pay out, and a payout can never exceed the fund balance; every payout carries its case reference.
 - **Time-locked upgrades:** `propose_upgrade` (admin) announces a wasm hash, `upgrade` applies it only after 3 days, and `cancel_upgrade` withdraws it.
 - **Trust assumptions:**
   - The arbiter decides disputed orders.
@@ -51,7 +53,7 @@ Per-order USDC escrow following [docs/order-lifecycle.md](../docs/order-lifecycl
 
 ### Verification
 
-Tests: 43, including buy and sell flows, every deadline edge, calls with no signatures and with the wrong signer, a frozen recipient, reference squatting, the upgrade time lock, and a fund-conservation invariant over mixed orders. Mutation check: removing each of 25 security controls makes the suite fail.
+Tests: 63 (45 escrow, 12 reward vault, 6 insurance fund), including buy and sell flows, every deadline edge, calls with no signatures and with the wrong signer, a frozen recipient, reference squatting, the upgrade time lock, vault vesting and slashing, insurance payouts, and a fund-conservation invariant over mixed orders. Mutation check: the security controls are exercised by dedicated negative tests.
 
 The review followed the security checklist of the official Stellar skill ([stellar/stellar-dev-skill](https://github.com/stellar/stellar-dev-skill)). CI builds the wasm with `source_repo` metadata (SEP-55).
 
@@ -59,6 +61,37 @@ The review followed the security checklist of the official Stellar skill ([stell
 cargo test
 stellar contract build
 ```
+
+---
+
+## 2.1 Merchant reward vault (`kalea-reward-vault` v1)
+
+Per-merchant reward ledger with a 7-day vesting period. The escrow transfers the reward USDC into
+the vault and calls `credit(merchant, reward)` in the same transaction.
+
+| Function | Signer | Effect |
+|---|---|---|
+| `credit` | registered escrow | Adds a reward entry that vests after seven days. |
+| `withdraw` | merchant | Pays every vested entry to the merchant and removes it from the ledger. |
+| `slash` | arbiter | Applies a resolved dispute loss to unvested entries only; vested rewards are untouched. |
+| `vested` / `unvested` / `total` | anyone | Read the merchant ledger. |
+| `set_escrow` / `set_arbiter` | admin | Rotates the escrow or arbiter. Admin never moves rewards. |
+
+Unvested entries are slashed oldest-first, which keeps the result deterministic. The vault stores
+one persistent ledger per merchant and extends its TTL on every read or write.
+
+## 2.2 Insurance fund (`kalea-insurance-fund` v1)
+
+Receives the ~0.1% insurance contribution from each release. The admin, meant to be a multisig,
+pays resolved dispute losses:
+
+| Function | Signer | Effect |
+|---|---|---|
+| `payout(to, amount, case_ref)` | admin | Transfers covered losses up to the fund balance and emits the case reference. |
+| `balance` | anyone | Returns the token balance held by the fund. |
+
+The token balance is the fund balance: contributions arrive through ordinary token transfers from
+the escrow, so there is no separate deposit ledger to reconcile.
 
 ---
 
@@ -75,8 +108,6 @@ The detailed lifecycle these contracts enforce is documented in [docs/order-life
 
 ## 4. Remaining gaps
 
-1. The merchant reward vault (7-day cycles) and the insurance fund are plain accounts on testnet; their contracts are not implemented.
-2. Default `payment_timeout` and `confirmation_timeout` values and who acts as arbiter are open decisions in the team docs.
-3. The testnet deployment predates the review fixes above and must be redeployed.
-4. Static analyzers (Scout, OpenZeppelin detectors), GitHub build attestation and an external audit are not done yet.
-5. The reward vault and insurance fund should be contracts: a plain account without a USDC trustline would make every release fail.
+1. Default `payment_timeout` and `confirmation_timeout` values and who acts as arbiter are open decisions in the team docs.
+2. The new escrow, reward vault and insurance fund set must be redeployed to testnet with explorer links.
+3. Static analyzers (Scout, OpenZeppelin detectors), GitHub build attestation and an external audit are not done yet.
