@@ -1032,6 +1032,22 @@ dependencies = [
 name = "kalea-escrow"
 version = "0.1.0"
 dependencies = [
+ "kalea-insurance-fund",
+ "kalea-reward-vault",
+ "soroban-sdk",
+]
+
+[[package]]
+name = "kalea-insurance-fund"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
+name = "kalea-reward-vault"
+version = "0.1.0"
+dependencies = [
  "soroban-sdk",
 ]
 
