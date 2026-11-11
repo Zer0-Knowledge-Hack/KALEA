@@ -23,10 +23,10 @@ Kalea is **B2B fiat <-> USDC ramp infrastructure on Stellar for Latin America**.
   - Reputation scoring and completion rates.
   - Pricing engine (all-in prices with spreads over mid-market reference).
   - Integrator fee accounting (debited off-chain from prefunded USDC balance).
-- **On-chain (`contracts/escrow`):**
+- **On-chain (`contracts/`):**
   - `kalea-escrow` v1: Minimal Soroban escrow enforcing canonical lifecycle (`created -> escrow_locked -> fiat_sent -> released`).
   - Exits: `cancel` (before fiat sent), `expire` (refund after payment timeout), `dispute` (freeze on timeout or conflict).
-  - Atomic 3-way split on release: recipient USDC, merchant reward vault (1.5%), insurance fund (~0.1%).
+  - Atomic 3-way split on release: recipient USDC, merchant reward vault (1.5%, `kalea-reward-vault`), insurance fund (~0.1%, `kalea-insurance-fund`).
 - **Fee sponsorship:**
   - Stellar CAP-0015 Fee-Bump transactions sponsored by a relayer (Pollar, planned) for gasless UX.
 
@@ -39,7 +39,7 @@ Kalea is **B2B fiat <-> USDC ramp infrastructure on Stellar for Latin America**.
 | `packages/shared/` | Domain types, corridor catalogs, order lifecycle state machine | Pure TypeScript | Vitest (Unit) |
 | `apps/api/` | Integrator `/v1` API, merchant SEP-10 challenge/login, demo endpoints | Hono, Node.js, Zod | Vitest (Unit & Integration) |
 | `apps/web/` | B2B integrator landing (en, es, pt-br), interactive quote demo, brand guidelines | Astro 7 (`^7.4.7`), Preact islands, Tailwind 4 | Playwright (E2E) |
-| `contracts/` | Soroban smart contracts (`kalea-escrow` v1) | Rust (`#![no_std]`), Soroban SDK 28 | `cargo test` (Host unit tests) |
+| `contracts/` | Soroban smart contracts (`kalea-escrow`, `kalea-reward-vault`, `kalea-insurance-fund`) | Rust (`#![no_std]`), Soroban SDK 28 | `cargo test` (Host unit tests) |
 | `docs/` | Architectural rationale, business model, order lifecycle specs | Markdown | Review |
 
 ---

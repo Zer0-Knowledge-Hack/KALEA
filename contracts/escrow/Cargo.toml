@@ -15,3 +15,5 @@ soroban-sdk = { workspace = true }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
+kalea-reward-vault = { path = "../reward-vault" }
+kalea-insurance-fund = { path = "../insurance-fund" }

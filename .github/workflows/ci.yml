@@ -60,4 +60,12 @@ jobs:
           tar --extract --gzip --file "$archive" --directory "$RUNNER_TEMP" stellar
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
       - run: stellar --version
-      - run: stellar contract build --meta source_repo=github:Zer0-Knowledge-Hack/KALEA
+      - name: Build all contract wasm files
+        shell: bash
+        run: |
+          for package in kalea-escrow kalea-reward-vault kalea-insurance-fund; do
+            stellar contract build --package "$package" --meta source_repo=github:Zer0-Knowledge-Hack/KALEA
+          done
+          test -f target/wasm32v1-none/release/kalea_escrow.wasm
+          test -f target/wasm32v1-none/release/kalea_reward_vault.wasm
+          test -f target/wasm32v1-none/release/kalea_insurance_fund.wasm

@@ -2,6 +2,10 @@
 extern crate std;
 
 use super::*;
+use kalea_insurance_fund::{KaleaInsuranceFund, KaleaInsuranceFundClient};
+use kalea_reward_vault::{
+    Error as VaultError, KaleaRewardVault, KaleaRewardVaultClient, VESTING_PERIOD_SECS,
+};
 use soroban_sdk::{
     testutils::{Address as _, AuthorizedFunction, IssuerFlags, Ledger, MockAuth, MockAuthInvoke},
     token::{StellarAssetClient, TokenClient},
@@ -17,6 +21,8 @@ struct S<'a> {
     env: Env,
     esc: KaleaEscrowClient<'a>,
     usdc: TokenClient<'a>,
+    reward_vault: KaleaRewardVaultClient<'a>,
+    insurance: KaleaInsuranceFundClient<'a>,
     admin: Address,
     arbiter: Address,
     operator: Address,
@@ -31,13 +37,19 @@ fn setup() -> S<'static> {
     env.mock_all_auths();
     env.ledger().with_mut(|l| l.timestamp = START);
     let g = || Address::generate(&env);
-    let (admin, arbiter, operator, vault, fund, merchant, user) =
-        (g(), g(), g(), g(), g(), g(), g());
+    let (admin, arbiter, operator, merchant, user) = (g(), g(), g(), g(), g());
     let sac = env.register_stellar_asset_contract_v2(g());
     // USDC on Stellar is issued with AUTH_REVOCABLE (Circle can freeze accounts)
     sac.issuer().set_flag(IssuerFlags::RevocableFlag);
     StellarAssetClient::new(&env, &sac.address()).mint(&merchant, &(10_000 * UNIT));
     StellarAssetClient::new(&env, &sac.address()).mint(&user, &(10_000 * UNIT));
+
+    // Deploy the vault and fund first; the vault learns the escrow address after the escrow exists.
+    let vault = env.register(
+        KaleaRewardVault,
+        (admin.clone(), arbiter.clone(), sac.address()),
+    );
+    let fund = env.register(KaleaInsuranceFund, (admin.clone(), sac.address()));
     let id = env.register(
         KaleaEscrow,
         (
@@ -51,10 +63,15 @@ fn setup() -> S<'static> {
     );
     let esc = KaleaEscrowClient::new(&env, &id);
     let usdc = TokenClient::new(&env, &sac.address());
+    let reward_vault = KaleaRewardVaultClient::new(&env, &vault);
+    reward_vault.set_escrow(&id);
+    let insurance = KaleaInsuranceFundClient::new(&env, &fund);
     S {
         env,
         esc,
         usdc,
+        reward_vault,
+        insurance,
         admin,
         arbiter,
         operator,
@@ -355,6 +372,47 @@ fn buy_full_flow_splits_recipient_reward_and_insurance() {
     assert_eq!(s.usdc.balance(&s.fund), UNIT / 10);
     assert_eq!(s.usdc.balance(&s.esc.address), 0);
     assert_eq!(status(&s, id), Status::Released);
+    assert_eq!(s.reward_vault.unvested(&s.merchant), (15 * UNIT / 10));
+    assert_eq!(s.reward_vault.vested(&s.merchant), (0));
+    assert_eq!(s.insurance.balance(), UNIT / 10);
+}
+
+#[test]
+fn release_credits_the_vault_and_the_merchant_withdraws_after_vesting() {
+    let s = setup();
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    s.esc.release(&id);
+    let reward = 15 * UNIT / 10;
+
+    assert_eq!(s.reward_vault.unvested(&s.merchant), (reward));
+    assert_eq!(
+        s.reward_vault.try_withdraw(&s.merchant),
+        Err(Ok(VaultError::NothingToWithdraw))
+    );
+
+    advance(&s, VESTING_PERIOD_SECS);
+    let before = s.usdc.balance(&s.merchant);
+    assert_eq!(s.reward_vault.withdraw(&s.merchant), reward);
+    assert_eq!(s.usdc.balance(&s.merchant), before + reward);
+    assert_eq!(s.usdc.balance(&s.vault), 0);
+    assert_eq!(s.reward_vault.total(&s.merchant), (0));
+}
+
+#[test]
+fn release_funds_the_insurance_fund_and_the_admin_pays_a_claim() {
+    let s = setup();
+    let id = buy(&s, 1);
+    s.esc.mark_paid(&id, &ev(&s));
+    s.esc.release(&id);
+
+    let insurance = UNIT / 10;
+    assert_eq!(s.insurance.balance(), insurance);
+    let reference = rf(&s.env, 9);
+    let before = s.usdc.balance(&s.user);
+    s.insurance.payout(&s.user, &insurance, &reference);
+    assert_eq!(s.usdc.balance(&s.user), before + insurance);
+    assert_eq!(s.insurance.balance(), 0);
 }
 
 // ---------------- sell (off-ramp) and QR payment ----------------
@@ -371,6 +429,7 @@ fn sell_full_flow_pays_the_merchant() {
     assert_eq!(s.usdc.balance(&s.merchant), 10_000 * UNIT + 100 * UNIT);
     assert_eq!(s.usdc.balance(&s.vault), 15 * UNIT / 10);
     assert_eq!(s.esc.get_order(&id).merchant, s.merchant);
+    assert_eq!(s.reward_vault.unvested(&s.merchant), (15 * UNIT / 10));
 }
 
 // ---------------- mark_paid ----------------
@@ -724,12 +783,16 @@ fn admin_transfer_is_two_step() {
 #[test]
 fn config_changes_apply_to_release() {
     let s = setup();
-    let (arb, op, vault, fund) = (
-        Address::generate(&s.env),
+    let (arb, op, fund) = (
         Address::generate(&s.env),
         Address::generate(&s.env),
         Address::generate(&s.env),
     );
+    let vault = s.env.register(
+        KaleaRewardVault,
+        (s.admin.clone(), s.arbiter.clone(), s.usdc.address.clone()),
+    );
+    KaleaRewardVaultClient::new(&s.env, &vault).set_escrow(&s.esc.address);
     s.esc.set_arbiter(&arb);
     s.esc.set_operator(&op);
     s.esc.set_reward_vault(&vault);
@@ -815,6 +878,19 @@ fn funds_are_conserved_across_mixed_orders() {
         }
     }
     assert_eq!(s.usdc.balance(&s.esc.address), 0);
+
+    // Release the vault ledger and the insurance fund too, so the invariant covers all three
+    // contracts rather than only their token balances at rest.
+    advance(&s, VESTING_PERIOD_SECS);
+    let _ = s.reward_vault.withdraw(&s.merchant);
+    let insurance = s.insurance.balance();
+    if insurance > 0 {
+        s.insurance.payout(&s.user, &insurance, &rf(&s.env, 200));
+    }
+
+    assert_eq!(s.usdc.balance(&s.esc.address), 0);
+    assert_eq!(s.usdc.balance(&s.vault), 0);
+    assert_eq!(s.usdc.balance(&s.fund), 0);
     let after: i128 = parties.iter().map(|a| s.usdc.balance(a)).sum();
     assert_eq!(before, after);
 }

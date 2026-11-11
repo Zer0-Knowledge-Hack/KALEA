@@ -30,10 +30,10 @@ flowchart LR
 | --- | --- | --- |
 | Integrator API / SDK | Quotes, orders, balance, webhooks. Scoped per integrator | Planned (`/v1`) |
 | Matching and pricing engine | Picks a merchant for each order. Prices per country and side over a reference rate: buy = mid + markup, sell = mid - discount | Planned |
-| Soroban order escrow (`kalea-escrow`) | One escrow per order in Stellar USDC. Fixed amounts, configurable timeouts, fee/reward/insurance split on release, refund on timeout | In development (PR #5) ([contracts](../contracts/README.md)) |
-| Merchant reward vault | Holds rewards in 7-day cycles before merchants can withdraw | Planned |
-| Insurance fund | Receives ~0.1% per order; covers losses from resolved disputes | Planned |
-| Disputes | Freezes the escrow, collects evidence, resolves to release or refund | Planned |
+| Soroban order escrow (`kalea-escrow`) | One escrow per order in Stellar USDC. Fixed amounts, configurable timeouts, fee/reward/insurance split on release, refund on timeout | Implemented; testnet redeploy pending ([contracts](../contracts/README.md)) |
+| Merchant reward vault | Holds rewards in 7-day cycles before merchants can withdraw | Implemented in `contracts/reward-vault`; testnet redeploy pending |
+| Insurance fund | Receives ~0.1% per order; covers losses from resolved disputes | Implemented in `contracts/insurance-fund`; testnet redeploy pending |
+| Disputes | Freezes the escrow, collects evidence, resolves to release or refund | Contract freeze/resolve implemented; API resolution planned |
 | Identity port | KYC/liveness and social-proof providers behind one interface | Planned |
 | Wallet / auth port | Wallet and account provider behind one interface | Planned |
 | Prefunded balance ledger | Integrator USDC balances and per-order fee debits | Planned |
@@ -61,11 +61,13 @@ To maintain high throughput, low latency, and minimal gas costs, Kalea enforces 
 - **Integrator Fee Accounting**: Debiting the Kalea protocol fee directly from the integrator's prefunded USDC balance.
 - **Proof & Evidence Collection**: Managing fiat payment receipts, webhooks, and dispute evidence payloads.
 
-### On-Chain (`kalea-escrow` Soroban Contract)
+### On-Chain (`kalea-escrow`, `kalea-reward-vault`, `kalea-insurance-fund`)
 - **Atomic Fund Locking**: Non-custodial lock of Stellar USDC for an order.
 - **Enforced Timeouts**: Expiration refunds if fiat is not sent within the payment timeout.
 - **State Settlement**: Enforcing terminal states (`Released`, `Cancelled`, `Expired`) and freeze on `Disputed`.
 - **Atomic Split on Release**: Distributing USDC in a single transaction to the recipient, the 7-day merchant reward vault (1.5%), and the insurance fund (~0.1%).
+- **Reward Vesting**: The reward vault credits each merchant in a per-merchant ledger, vests rewards for 7 days, and lets the arbiter slash unvested rewards.
+- **Insurance Payouts**: The insurance fund pays resolved dispute losses up to its balance, with the case reference emitted on-chain.
 
 ## Gasless UX: Fee Sponsorship & Pollar Status
 
@@ -80,7 +82,7 @@ To maintain high throughput, low latency, and minimal gas costs, Kalea enforces 
 | Integrators | API keys, scoped to one integrator |
 | Merchants / LPs | SEP-10 challenge signed by their Stellar account, exchanged for a JWT |
 
-SEP-10 login already exists in `apps/api` (`GET /auth/challenge`, `POST /auth/token`). In the current code it serves end users; it will move to merchants.
+SEP-10 login exists in `apps/api` under `/v1/merchants/auth/*` and already serves merchants; integrators authenticate with API keys.
 
 ## Ports and adapters
 

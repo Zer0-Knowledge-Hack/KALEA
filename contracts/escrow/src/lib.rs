@@ -41,9 +41,16 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contracterror, contractevent, contractimpl, contracttype, token, Address, BytesN,
-    ContractExecutable, Env,
+    contract, contractclient, contracterror, contractevent, contractimpl, contracttype, token,
+    Address, BytesN, ContractExecutable, Env,
 };
+
+/// Minimal client for the reward vault, declared locally so the vault's contract exports are not
+/// linked into the escrow wasm. The vault crate is a dev-dependency for cross-contract tests only.
+#[contractclient(name = "RewardVaultClient")]
+pub trait RewardVault {
+    fn credit(env: Env, merchant: Address, amount: i128);
+}
 
 #[cfg(test)]
 mod test;
@@ -313,7 +320,10 @@ fn pay_release(env: &Env, c: &Config, id: u64, o: &Order) {
     let me = env.current_contract_address();
     tk.transfer(&me, &o.recipient, &o.recipient_amount);
     if o.reward > 0 {
+        // Move the reward first, then attribute it to the merchant in the vault ledger. If the
+        // vault call fails, the whole release transaction reverts, including this transfer.
         tk.transfer(&me, &c.reward_vault, &o.reward);
+        RewardVaultClient::new(env, &c.reward_vault).credit(&o.merchant, &o.reward);
     }
     if o.insurance > 0 {
         tk.transfer(&me, &c.insurance_fund, &o.insurance);
